@@ -1,0 +1,31 @@
+{
+    "version":  "0.1.0",
+    "name":  "bc95-capstone-airbnb-user",
+    "scripts":  {
+                    "lint":  "eslint",
+                    "build":  "next build",
+                    "dev":  "next dev",
+                    "start":  "next start"
+                },
+    "devDependencies":  {
+                            "@types/react":  "^19",
+                            "typescript":  "^5",
+                            "@tailwindcss/postcss":  "^4",
+                            "eslint":  "^9",
+                            "tailwindcss":  "^4",
+                            "@types/node":  "^20",
+                            "eslint-config-next":  "16.2.10",
+                            "@types/react-dom":  "^19"
+                        },
+    "dependencies":  {
+                         "react":  "19.2.4",
+                         "zustand":  "^5.0.14",
+                         "axios":  "^1.18.1",
+                         "react-hook-form":  "^7.81.0",
+                         "@hookform/resolvers":  "^5.4.0",
+                         "zod":  "^4.4.3",
+                         "react-dom":  "19.2.4",
+                         "next":  "16.2.10"
+                     },
+    "private":  true
+}
