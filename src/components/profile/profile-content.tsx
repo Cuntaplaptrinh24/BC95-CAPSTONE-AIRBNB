@@ -1,6 +1,10 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useState,
+} from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { getUserById } from "@/services/user-service";
 import { getBookingsByUser } from "@/services/booking-service";
@@ -11,6 +15,7 @@ import SafeImage from "@/components/common/safe-image";
 import DataErrorState from "@/components/common/data-error-state";
 import EmptyState from "@/components/common/empty-state";
 import BookingHistoryCard from "@/components/profile/booking-history-card";
+import FavoriteSection from "@/components/profile/favorite-section";
 import ProfileEditor from "@/components/profile/profile-editor";
 import type { User } from "@/types/user";
 import type { Booking } from "@/types/booking";
@@ -43,21 +48,35 @@ const TEXT = {
   unknown: "Không xác định",
 };
 
-function parseLocalDate(iso: string): Date | null {
-  if (!iso) return null;
-
-  const parts = iso.slice(0, 10).split("-");
-
-  if (parts.length !== 3) return null;
-
-  const nums = parts.map(Number);
-
-  if (nums.some((number) => !Number.isFinite(number))) {
+function parseLocalDate(
+  iso: string,
+): Date | null {
+  if (!iso) {
     return null;
   }
 
-  const [year, month, day] = nums;
-  const date = new Date(year, month - 1, day);
+  const parts = iso.slice(0, 10).split("-");
+
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const numbers = parts.map(Number);
+
+  if (
+    numbers.some(
+      (number) => !Number.isFinite(number),
+    )
+  ) {
+    return null;
+  }
+
+  const [year, month, day] = numbers;
+  const date = new Date(
+    year,
+    month - 1,
+    day,
+  );
 
   if (
     date.getFullYear() !== year ||
@@ -70,14 +89,20 @@ function parseLocalDate(iso: string): Date | null {
   return date;
 }
 
-function formatBirthday(value: string): string {
+function formatBirthday(
+  value: string,
+): string {
   const trimmed = (value || "").trim();
 
-  if (!trimmed) return TEXT.noUpdate;
+  if (!trimmed) {
+    return TEXT.noUpdate;
+  }
 
   const date = parseLocalDate(trimmed);
 
-  if (!date) return TEXT.unknown;
+  if (!date) {
+    return TEXT.unknown;
+  }
 
   return date.toLocaleDateString("vi-VN", {
     year: "numeric",
@@ -86,15 +111,24 @@ function formatBirthday(value: string): string {
   });
 }
 
-function getTripStatus(booking: Booking): string {
-  const checkIn = parseLocalDate(booking.ngayDen);
-  const checkOut = parseLocalDate(booking.ngayDi);
+function getTripStatus(
+  booking: Booking,
+): string {
+  const checkIn = parseLocalDate(
+    booking.ngayDen,
+  );
+
+  const checkOut = parseLocalDate(
+    booking.ngayDi,
+  );
 
   if (!checkIn || !checkOut) {
     return STATUS_UNKNOWN;
   }
 
-  if (checkOut.getTime() <= checkIn.getTime()) {
+  if (
+    checkOut.getTime() <= checkIn.getTime()
+  ) {
     return STATUS_UNKNOWN;
   }
 
@@ -126,7 +160,9 @@ const STATUS_ORDER: string[] = [
   STATUS_UNKNOWN,
 ];
 
-function statusWeight(status: string): number {
+function statusWeight(
+  status: string,
+): number {
   const index = STATUS_ORDER.indexOf(status);
 
   return index >= 0
@@ -143,61 +179,71 @@ interface EnrichedBooking {
 function sortEnrichedBookings(
   bookings: EnrichedBooking[],
 ): EnrichedBooking[] {
-  return [...bookings].sort((first, second) => {
-    const firstWeight =
-      statusWeight(first.status);
+  return [...bookings].sort(
+    (first, second) => {
+      const firstWeight = statusWeight(
+        first.status,
+      );
 
-    const secondWeight =
-      statusWeight(second.status);
+      const secondWeight = statusWeight(
+        second.status,
+      );
 
-    if (firstWeight !== secondWeight) {
-      return firstWeight - secondWeight;
-    }
+      if (firstWeight !== secondWeight) {
+        return firstWeight - secondWeight;
+      }
 
-    if (first.status === STATUS_UPCOMING) {
-      const firstDate =
-        parseLocalDate(
-          first.booking.ngayDen,
-        )?.getTime() ?? 0;
+      if (
+        first.status === STATUS_UPCOMING
+      ) {
+        const firstDate =
+          parseLocalDate(
+            first.booking.ngayDen,
+          )?.getTime() ?? 0;
 
-      const secondDate =
-        parseLocalDate(
-          second.booking.ngayDen,
-        )?.getTime() ?? 0;
+        const secondDate =
+          parseLocalDate(
+            second.booking.ngayDen,
+          )?.getTime() ?? 0;
 
-      return firstDate - secondDate;
-    }
+        return firstDate - secondDate;
+      }
 
-    if (first.status === STATUS_ONGOING) {
-      const firstDate =
-        parseLocalDate(
-          first.booking.ngayDi,
-        )?.getTime() ?? 0;
+      if (
+        first.status === STATUS_ONGOING
+      ) {
+        const firstDate =
+          parseLocalDate(
+            first.booking.ngayDi,
+          )?.getTime() ?? 0;
 
-      const secondDate =
-        parseLocalDate(
-          second.booking.ngayDi,
-        )?.getTime() ?? 0;
+        const secondDate =
+          parseLocalDate(
+            second.booking.ngayDi,
+          )?.getTime() ?? 0;
 
-      return firstDate - secondDate;
-    }
+        return firstDate - secondDate;
+      }
 
-    if (first.status === STATUS_COMPLETED) {
-      const firstDate =
-        parseLocalDate(
-          first.booking.ngayDi,
-        )?.getTime() ?? 0;
+      if (
+        first.status === STATUS_COMPLETED
+      ) {
+        const firstDate =
+          parseLocalDate(
+            first.booking.ngayDi,
+          )?.getTime() ?? 0;
 
-      const secondDate =
-        parseLocalDate(
-          second.booking.ngayDi,
-        )?.getTime() ?? 0;
+        const secondDate =
+          parseLocalDate(
+            second.booking.ngayDi,
+          )?.getTime() ?? 0;
 
-      return secondDate - firstDate;
-    }
+        return secondDate - firstDate;
+      }
 
-    return 0;
-  });
+      return 0;
+    },
+  );
 }
 
 export default function ProfileContent() {
@@ -209,23 +255,35 @@ export default function ProfileContent() {
     setAuth,
   } = useAuthStore();
 
-  const [profileUser, setProfileUser] =
-    useState<User | null>(null);
+  const [
+    profileUser,
+    setProfileUser,
+  ] = useState<User | null>(null);
 
-  const [userLoading, setUserLoading] =
-    useState(true);
+  const [
+    userLoading,
+    setUserLoading,
+  ] = useState(true);
 
-  const [userError, setUserError] =
-    useState("");
+  const [
+    userError,
+    setUserError,
+  ] = useState("");
 
-  const [bookings, setBookings] =
-    useState<EnrichedBooking[]>([]);
+  const [
+    bookings,
+    setBookings,
+  ] = useState<EnrichedBooking[]>([]);
 
-  const [bookingLoading, setBookingLoading] =
-    useState(true);
+  const [
+    bookingLoading,
+    setBookingLoading,
+  ] = useState(true);
 
-  const [bookingError, setBookingError] =
-    useState("");
+  const [
+    bookingError,
+    setBookingError,
+  ] = useState("");
 
   useEffect(() => {
     if (
@@ -244,7 +302,9 @@ export default function ProfileContent() {
       setUserError("");
 
       try {
-        const profile = await getUserById(user.id);
+        const profile = await getUserById(
+          user.id,
+        );
 
         if (!cancelled) {
           setProfileUser(profile);
@@ -270,42 +330,56 @@ export default function ProfileContent() {
         const rawBookings =
           await getBookingsByUser(user.id);
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         const roomIds = [
           ...new Set(
             rawBookings.map(
-              (booking) => booking.maPhong,
+              (booking) =>
+                booking.maPhong,
             ),
           ),
         ];
 
-        const roomMap = new Map<number, Room>();
+        const roomMap =
+          new Map<number, Room>();
 
-        const results = await Promise.allSettled(
-          roomIds.map((roomId) =>
-            getRoomById(roomId),
-          ),
+        const results =
+          await Promise.allSettled(
+            roomIds.map((roomId) =>
+              getRoomById(roomId),
+            ),
+          );
+
+        results.forEach(
+          (result, index) => {
+            if (
+              result.status ===
+              "fulfilled"
+            ) {
+              roomMap.set(
+                roomIds[index],
+                result.value,
+              );
+            }
+          },
         );
 
-        results.forEach((result, index) => {
-          if (result.status === "fulfilled") {
-            roomMap.set(
-              roomIds[index],
-              result.value,
-            );
-          }
-        });
-
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         const enriched: EnrichedBooking[] =
           rawBookings.map((booking) => ({
             booking,
             room:
-              roomMap.get(booking.maPhong) ??
-              null,
-            status: getTripStatus(booking),
+              roomMap.get(
+                booking.maPhong,
+              ) ?? null,
+            status:
+              getTripStatus(booking),
           }));
 
         setBookings(
@@ -355,22 +429,22 @@ export default function ProfileContent() {
 
           <div className="h-8 w-48 rounded bg-surface" />
 
-          {Array.from({ length: 2 }).map(
-            (_, index) => (
-              <div
-                key={index}
-                className="flex gap-4 rounded-xl border border-border p-4"
-              >
-                <div className="h-24 w-28 shrink-0 rounded-lg bg-surface" />
+          {Array.from({
+            length: 2,
+          }).map((_, index) => (
+            <div
+              key={index}
+              className="flex gap-4 rounded-xl border border-border p-4"
+            >
+              <div className="h-24 w-28 shrink-0 rounded-lg bg-surface" />
 
-                <div className="flex-1 space-y-2 py-1">
-                  <div className="h-4 w-40 rounded bg-surface" />
-                  <div className="h-3 w-56 rounded bg-surface" />
-                  <div className="h-3 w-24 rounded bg-surface" />
-                </div>
+              <div className="flex-1 space-y-2 py-1">
+                <div className="h-4 w-40 rounded bg-surface" />
+                <div className="h-3 w-56 rounded bg-surface" />
+                <div className="h-3 w-24 rounded bg-surface" />
               </div>
-            ),
-          )}
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -390,7 +464,9 @@ export default function ProfileContent() {
 
         <button
           type="button"
-          onClick={() => requestAuthModal()}
+          onClick={() =>
+            requestAuthModal()
+          }
           className="mt-4 rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
         >
           {TEXT.btnLogin}
@@ -414,7 +490,10 @@ export default function ProfileContent() {
     };
 
     setProfileUser(mergedUser);
-    setAuth(mergedUser, accessToken);
+    setAuth(
+      mergedUser,
+      accessToken,
+    );
   };
 
   const profileFields: {
@@ -451,12 +530,15 @@ export default function ProfileContent() {
     setBookings((current) =>
       sortEnrichedBookings(
         current.map((item) =>
-          item.booking.id === updatedBooking.id
+          item.booking.id ===
+          updatedBooking.id
             ? {
                 ...item,
                 booking: updatedBooking,
                 status:
-                  getTripStatus(updatedBooking),
+                  getTripStatus(
+                    updatedBooking,
+                  ),
               }
             : item,
         ),
@@ -493,53 +575,59 @@ export default function ProfileContent() {
           </div>
         )}
 
-        {userError && !userLoading && (
-          <div className="mt-4">
-            <DataErrorState
-              title={TEXT.errorUser}
-              message={userError}
-            />
-          </div>
-        )}
-
-        {!userLoading && !userError && (
-          <div className="mt-6 space-y-6">
-            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
-              <SafeImage
-                src={avatarSrc}
-                alt={ui.name}
-                fallbackSrc="/placeholder-avatar.svg"
-                className="h-24 w-24 shrink-0 rounded-full object-cover sm:h-28 sm:w-28"
+        {userError &&
+          !userLoading && (
+            <div className="mt-4">
+              <DataErrorState
+                title={TEXT.errorUser}
+                message={userError}
               />
-
-              <dl className="grid w-full max-w-md grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm text-foreground sm:w-auto">
-                {profileFields.map(
-                  (field) => (
-                    <Fragment
-                      key={field.label}
-                    >
-                      <dt className="font-medium text-secondary">
-                        {field.label}
-                      </dt>
-
-                      <dd>
-                        {field.value ||
-                          TEXT.noUpdate}
-                      </dd>
-                    </Fragment>
-                  ),
-                )}
-              </dl>
             </div>
+          )}
 
-            <ProfileEditor
-              key={`${ui.id}-${ui.name}-${ui.email}-${ui.phone}-${ui.birthday}-${ui.gender}-${ui.avatar ?? ""}`}
-              user={ui}
-              accessToken={accessToken}
-              onUpdated={handleUserUpdated}
-            />
-          </div>
-        )}
+        {!userLoading &&
+          !userError && (
+            <div className="mt-6 space-y-6">
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
+                <SafeImage
+                  src={avatarSrc}
+                  alt={ui.name}
+                  fallbackSrc="/placeholder-avatar.svg"
+                  className="h-24 w-24 shrink-0 rounded-full object-cover sm:h-28 sm:w-28"
+                />
+
+                <dl className="grid w-full max-w-md grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm text-foreground sm:w-auto">
+                  {profileFields.map(
+                    (field) => (
+                      <Fragment
+                        key={field.label}
+                      >
+                        <dt className="font-medium text-secondary">
+                          {field.label}
+                        </dt>
+
+                        <dd>
+                          {field.value ||
+                            TEXT.noUpdate}
+                        </dd>
+                      </Fragment>
+                    ),
+                  )}
+                </dl>
+              </div>
+
+              <ProfileEditor
+                key={`${ui.id}-${ui.name}-${ui.email}-${ui.phone}-${ui.birthday}-${ui.gender}-${ui.avatar ?? ""}`}
+                user={ui}
+                accessToken={
+                  accessToken
+                }
+                onUpdated={
+                  handleUserUpdated
+                }
+              />
+            </div>
+          )}
       </section>
 
       <section className="mt-10 border-t border-border pt-8">
@@ -549,22 +637,22 @@ export default function ProfileContent() {
 
         {bookingLoading && (
           <div className="mt-6 space-y-4">
-            {Array.from({ length: 3 }).map(
-              (_, index) => (
-                <div
-                  key={index}
-                  className="flex animate-pulse gap-4 rounded-xl border border-border p-4"
-                >
-                  <div className="h-24 w-28 shrink-0 rounded-lg bg-surface" />
+            {Array.from({
+              length: 3,
+            }).map((_, index) => (
+              <div
+                key={index}
+                className="flex animate-pulse gap-4 rounded-xl border border-border p-4"
+              >
+                <div className="h-24 w-28 shrink-0 rounded-lg bg-surface" />
 
-                  <div className="flex-1 space-y-2 py-1">
-                    <div className="h-4 w-40 rounded bg-surface" />
-                    <div className="h-3 w-56 rounded bg-surface" />
-                    <div className="h-3 w-24 rounded bg-surface" />
-                  </div>
+                <div className="flex-1 space-y-2 py-1">
+                  <div className="h-4 w-40 rounded bg-surface" />
+                  <div className="h-3 w-56 rounded bg-surface" />
+                  <div className="h-3 w-24 rounded bg-surface" />
                 </div>
-              ),
-            )}
+              </div>
+            ))}
           </div>
         )}
 
@@ -600,10 +688,13 @@ export default function ProfileContent() {
                   const group =
                     bookings.filter(
                       (item) =>
-                        item.status === status,
+                        item.status ===
+                        status,
                     );
 
-                  if (group.length === 0) {
+                  if (
+                    group.length === 0
+                  ) {
                     return null;
                   }
 
@@ -618,18 +709,25 @@ export default function ProfileContent() {
                           ({
                             booking,
                             room,
-                            status,
+                            status:
+                              bookingStatus,
                           }) => (
                             <BookingHistoryCard
-                              key={booking.id}
-                              booking={booking}
+                              key={
+                                booking.id
+                              }
+                              booking={
+                                booking
+                              }
                               room={room}
-                              userId={user.id}
+                              userId={
+                                user.id
+                              }
                               accessToken={
                                 accessToken
                               }
                               canManage={
-                                status ===
+                                bookingStatus ===
                                 STATUS_UPCOMING
                               }
                               onUpdated={
@@ -649,6 +747,8 @@ export default function ProfileContent() {
             </div>
           )}
       </section>
+
+      <FavoriteSection />
     </div>
   );
 }
