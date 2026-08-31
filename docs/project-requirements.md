@@ -1,11 +1,19 @@
-﻿# Dự án Capstone Airbnb — Phần User
+﻿# Dự án Capstone Airbnb — User & Admin
 
 ## Mục tiêu
-Capstone Next.js cho website Airbnb dành riêng cho **User**. Người dùng có thể xem nhà/phòng theo vị trí, xem chi tiết phòng, tìm kiếm, đăng nhập/đăng ký, quản lý thông tin cá nhân và lịch sử đặt phòng, đặt phòng ngay trong trang chi tiết phòng.
+Capstone Next.js cho website Airbnb gồm 2 phần: **User** (đã hoàn thành) và **Admin** (đã hoàn thành). User có thể xem nhà/phòng theo vị trí, xem chi tiết phòng, tìm kiếm, đăng nhập/đăng ký, quản lý thông tin cá nhân và lịch sử đặt phòng, đặt phòng ngay trong trang chi tiết phòng. Admin quản lý toàn bộ dữ liệu hệ thống (Người dùng, Vị trí, Phòng thuê, Đặt phòng, Bình luận) tại khu vực riêng `/admin`.
 
 ## Phạm vi
-- **Chỉ làm phần User.** Không làm bất kỳ màn hình, route, component, service hay chức năng nào cho Admin.
-- Các màn hình User dự kiến: Trang chủ, danh sách phòng theo vị trí/tìm kiếm, chi tiết phòng (kèm form đặt phòng), đăng nhập, đăng ký, thông tin cá nhân (kèm lịch sử đặt phòng).
+- **Phần User** (route ngoài `/admin`): Trang chủ, danh sách phòng theo vị trí/tìm kiếm, chi tiết phòng (kèm form đặt phòng), đăng nhập, đăng ký, thông tin cá nhân (kèm lịch sử đặt phòng).
+- **Phần Admin** (route `/admin/*`, chỉ tài khoản role `ADMIN` truy cập được):
+  - Đăng nhập quản trị riêng tại `/admin/login`.
+  - Tổng quan (`/admin`): số liệu tổng hợp Người dùng/Vị trí/Phòng thuê/Đặt phòng/Bình luận.
+  - Người dùng (`/admin/users`): tìm kiếm, phân trang, thêm/sửa/xóa tài khoản.
+  - Vị trí (`/admin/locations`): thêm/sửa/xóa vị trí, upload hình ảnh.
+  - Phòng thuê (`/admin/rooms`): thêm/sửa/xóa phòng (đầy đủ tiện nghi), upload hình ảnh.
+  - Đặt phòng (`/admin/bookings`): sửa ngày/số khách, xóa (không tạo mới vì đặt phòng phát sinh từ User).
+  - Bình luận (`/admin/comments`): kiểm duyệt nội dung/số sao, xóa (không tạo mới vì bình luận phát sinh từ User).
+  - Kiểm tra quyền truy cập được thực hiện ở phía client (`AdminGuard`) dựa trên `user.role === 'ADMIN'` lưu trong Zustand store — đây là rào chắn UI, không thay thế cho việc phân quyền ở backend.
 
 ## Stack kỹ thuật
 - Next.js App Router

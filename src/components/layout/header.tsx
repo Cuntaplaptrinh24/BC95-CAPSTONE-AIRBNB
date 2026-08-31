@@ -9,6 +9,10 @@ import {
 import Link from "next/link";
 
 import {
+  usePathname,
+} from "next/navigation";
+
+import {
   useAuthStore,
 } from "@/store/auth-store";
 
@@ -47,6 +51,8 @@ export default function Header() {
     useRef<HTMLDivElement>(
       null,
     );
+
+  const pathname = usePathname();
 
   useEffect(() => {
     const openAuth = () => {
@@ -129,6 +135,11 @@ export default function Header() {
     setAuthView("signup");
     setAuthOpen(true);
   };
+
+  // Khu vực Admin có thanh điều hướng riêng, không hiển thị Header của User.
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
 
   return (
     <>
