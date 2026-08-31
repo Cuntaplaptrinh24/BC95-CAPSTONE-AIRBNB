@@ -4,25 +4,60 @@ import {
   useEffect,
   useRef,
   useState,
+  type FormEvent,
 } from "react";
-
 import Link from "next/link";
-
 import {
   usePathname,
+  useRouter,
 } from "next/navigation";
-
-import {
-  useAuthStore,
-} from "@/store/auth-store";
-
+import { useAuthStore } from "@/store/auth-store";
 import AuthModal from "@/components/auth/auth-modal";
-
 import {
   AUTH_MODAL_OPEN_EVENT,
 } from "@/lib/auth-events";
 
+function todayISO(): string {
+  const date = new Date();
+  const offset = date.getTimezoneOffset();
+
+  const localDate = new Date(
+    date.getTime() -
+      offset * 60 * 1000,
+  );
+
+  return localDate
+    .toISOString()
+    .slice(0, 10);
+}
+
+function nextDayISO(
+  value: string,
+): string {
+  const [year, month, day] = value
+    .split("-")
+    .map(Number);
+
+  const date = new Date(
+    Date.UTC(
+      year,
+      month - 1,
+      day,
+    ),
+  );
+
+  date.setUTCDate(
+    date.getUTCDate() + 1,
+  );
+
+  return date
+    .toISOString()
+    .slice(0, 10);
+}
+
 export default function Header() {
+  const router = useRouter();
+
   const {
     user,
     isAuthenticated,
@@ -47,10 +82,67 @@ export default function Header() {
     "signin" | "signup"
   >("signin");
 
+  const [
+    keyword,
+    setKeyword,
+  ] = useState("");
+
+  const [
+    checkIn,
+    setCheckIn,
+  ] = useState("");
+
+  const [
+    guests,
+    setGuests,
+  ] = useState("1");
+
   const menuRef =
-    useRef<HTMLDivElement>(
-      null,
+    useRef<HTMLDivElement>(null);
+
+  const handleSearch = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+
+    const params =
+      new URLSearchParams();
+
+    const trimmedKeyword =
+      keyword.trim();
+
+    if (trimmedKeyword) {
+      params.set(
+        "keyword",
+        trimmedKeyword,
+      );
+    }
+
+    if (checkIn) {
+      params.set(
+        "checkIn",
+        checkIn,
+      );
+
+      params.set(
+        "checkOut",
+        nextDayISO(checkIn),
+      );
+    }
+
+    if (guests !== "1") {
+      params.set(
+        "guests",
+        guests,
+      );
+    }
+
+    params.set("page", "1");
+
+    router.push(
+      `/rooms?${params.toString()}`,
     );
+  };
 
   const pathname = usePathname();
 
@@ -94,9 +186,7 @@ export default function Header() {
     const handleEscape = (
       event: KeyboardEvent,
     ) => {
-      if (
-        event.key === "Escape"
-      ) {
+      if (event.key === "Escape") {
         setMenuOpen(false);
       }
     };
@@ -145,7 +235,7 @@ export default function Header() {
     <>
       <header className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur">
         <div className="container-airbnb flex h-20 items-center justify-between gap-4">
-          {/* Logo Airbnb */}
+          {/* Logo */}
           <Link
             href="/"
             aria-label="Airbnb - Trang chủ"
@@ -163,36 +253,177 @@ export default function Header() {
             />
           </Link>
 
-          {/* Thanh tìm kiếm nhỏ */}
+          {/* Thanh tìm kiếm */}
           <div className="hidden flex-1 justify-center px-4 md:flex">
-            <Link
-              href="/#home-search"
-              className="flex w-full max-w-md items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm text-foreground shadow-sm transition hover:shadow-md"
+            <form
+              onSubmit={handleSearch}
+              aria-label="Tìm kiếm chỗ ở"
+              className="flex h-12 w-full max-w-[620px] items-center rounded-full border border-border bg-white p-1 pl-3 text-sm text-foreground shadow-sm transition hover:shadow-md focus-within:border-brand focus-within:ring-1 focus-within:ring-brand"
             >
-              <span className="font-medium">
-                Bất kỳ đâu
-              </span>
-
-              <span className="text-secondary">
-                ·
-              </span>
-
-              <span className="text-secondary">
-                Tuần nào
-              </span>
-
-              <span className="text-secondary">
-                ·
-              </span>
-
-              <span className="text-secondary">
-                Thêm khách
-              </span>
-
-              <span className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-brand text-white">
+              {/* Từ khóa */}
+              <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
                 <svg
                   width="17"
                   height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="shrink-0 text-brand"
+                >
+                  <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                  <circle
+                    cx="12"
+                    cy="10"
+                    r="2.5"
+                  />
+                </svg>
+
+                <label
+                  htmlFor="header-keyword"
+                  className="sr-only"
+                >
+                  Địa điểm hoặc tên phòng
+                </label>
+
+                <input
+                  id="header-keyword"
+                  type="text"
+                  value={keyword}
+                  onChange={(event) =>
+                    setKeyword(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Bất kỳ đâu"
+                  autoComplete="off"
+                  className="min-w-0 flex-1 bg-transparent font-medium outline-none placeholder:text-foreground"
+                />
+              </div>
+
+              <span
+                aria-hidden="true"
+                className="h-6 w-px shrink-0 bg-border"
+              />
+
+              {/* Ngày */}
+              <div className="flex shrink-0 items-center gap-2 px-3">
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="shrink-0 text-brand"
+                >
+                  <rect
+                    x="3"
+                    y="5"
+                    width="18"
+                    height="16"
+                    rx="2"
+                  />
+
+                  <path d="M16 3v4M8 3v4M3 11h18" />
+                </svg>
+
+                <label
+                  htmlFor="header-checkin"
+                  className="sr-only"
+                >
+                  Ngày nhận phòng
+                </label>
+
+                <input
+                  id="header-checkin"
+                  type="date"
+                  min={todayISO()}
+                  value={checkIn}
+                  onChange={(event) =>
+                    setCheckIn(
+                      event.target.value,
+                    )
+                  }
+                  className="w-[122px] bg-transparent text-secondary outline-none"
+                />
+              </div>
+
+              <span
+                aria-hidden="true"
+                className="h-6 w-px shrink-0 bg-border"
+              />
+
+              {/* Khách */}
+              <div className="flex shrink-0 items-center gap-2 px-3">
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="shrink-0 text-brand"
+                >
+                  <circle
+                    cx="9"
+                    cy="8"
+                    r="4"
+                  />
+
+                  <path d="M3 21v-2a6 6 0 0 1 12 0v2M16 4.5a4 4 0 0 1 0 7M17 15a6 6 0 0 1 4 5.65" />
+                </svg>
+
+                <label
+                  htmlFor="header-guests"
+                  className="sr-only"
+                >
+                  Số khách
+                </label>
+
+                <select
+                  id="header-guests"
+                  value={guests}
+                  onChange={(event) =>
+                    setGuests(
+                      event.target.value,
+                    )
+                  }
+                  className="w-[82px] cursor-pointer bg-transparent text-secondary outline-none"
+                >
+                  {Array.from(
+                    { length: 10 },
+                    (_, index) =>
+                      index + 1,
+                  ).map((number) => (
+                    <option
+                      key={number}
+                      value={number}
+                    >
+                      {number} khách
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Nút tìm kiếm */}
+              <button
+                type="submit"
+                aria-label="Tìm kiếm"
+                className="ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-dark active:scale-95"
+              >
+                <svg
+                  width="18"
+                  height="18"
                   viewBox="0 0 16 16"
                   fill="none"
                   aria-hidden="true"
@@ -202,18 +433,18 @@ export default function Header() {
                     cy="7"
                     r="5"
                     stroke="currentColor"
-                    strokeWidth="1.5"
+                    strokeWidth="1.8"
                   />
 
                   <path
                     d="M11 11L14.5 14.5"
                     stroke="currentColor"
-                    strokeWidth="1.5"
+                    strokeWidth="1.8"
                     strokeLinecap="round"
                   />
                 </svg>
-              </span>
-            </Link>
+              </button>
+            </form>
           </div>
 
           {/* Menu tài khoản */}
@@ -230,9 +461,7 @@ export default function Header() {
                 )
               }
               aria-label="Mở menu tài khoản"
-              aria-expanded={
-                menuOpen
-              }
+              aria-expanded={menuOpen}
               aria-haspopup="menu"
               className="flex items-center gap-3 rounded-full border border-border bg-white px-3 py-2 text-sm text-foreground shadow-sm transition hover:shadow-md"
             >
@@ -257,9 +486,7 @@ export default function Header() {
                 user.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={
-                      user.avatar
-                    }
+                    src={user.avatar}
                     alt={user.name}
                     className="h-8 w-8 rounded-full object-cover"
                   />
@@ -321,9 +548,7 @@ export default function Header() {
                       href="/profile"
                       role="menuitem"
                       onClick={() =>
-                        setMenuOpen(
-                          false,
-                        )
+                        setMenuOpen(false)
                       }
                       className="block w-full px-4 py-2 text-left text-foreground transition hover:bg-surface"
                     >
@@ -334,9 +559,7 @@ export default function Header() {
                       href="/rooms?page=1"
                       role="menuitem"
                       onClick={() =>
-                        setMenuOpen(
-                          false,
-                        )
+                        setMenuOpen(false)
                       }
                       className="block w-full px-4 py-2 text-left text-foreground transition hover:bg-surface"
                     >
@@ -347,9 +570,7 @@ export default function Header() {
                       href="/locations"
                       role="menuitem"
                       onClick={() =>
-                        setMenuOpen(
-                          false,
-                        )
+                        setMenuOpen(false)
                       }
                       className="block w-full px-4 py-2 text-left text-foreground transition hover:bg-surface"
                     >
@@ -363,9 +584,7 @@ export default function Header() {
                       role="menuitem"
                       onClick={() => {
                         logout();
-                        setMenuOpen(
-                          false,
-                        );
+                        setMenuOpen(false);
                       }}
                       className="block w-full px-4 py-2 text-left text-foreground transition hover:bg-surface"
                     >
@@ -377,9 +596,7 @@ export default function Header() {
                     <button
                       type="button"
                       role="menuitem"
-                      onClick={
-                        openSignIn
-                      }
+                      onClick={openSignIn}
                       className="block w-full px-4 py-2 text-left font-semibold text-foreground transition hover:bg-surface"
                     >
                       Đăng nhập
@@ -388,9 +605,7 @@ export default function Header() {
                     <button
                       type="button"
                       role="menuitem"
-                      onClick={
-                        openSignUp
-                      }
+                      onClick={openSignUp}
                       className="block w-full px-4 py-2 text-left text-foreground transition hover:bg-surface"
                     >
                       Đăng ký
@@ -402,9 +617,7 @@ export default function Header() {
                       href="/rooms?page=1"
                       role="menuitem"
                       onClick={() =>
-                        setMenuOpen(
-                          false,
-                        )
+                        setMenuOpen(false)
                       }
                       className="block w-full px-4 py-2 text-left text-foreground transition hover:bg-surface"
                     >
@@ -415,9 +628,7 @@ export default function Header() {
                       href="/locations"
                       role="menuitem"
                       onClick={() =>
-                        setMenuOpen(
-                          false,
-                        )
+                        setMenuOpen(false)
                       }
                       className="block w-full px-4 py-2 text-left text-foreground transition hover:bg-surface"
                     >
@@ -434,9 +645,7 @@ export default function Header() {
       {authOpen && (
         <AuthModal
           open
-          initialView={
-            authView
-          }
+          initialView={authView}
           onClose={() =>
             setAuthOpen(false)
           }

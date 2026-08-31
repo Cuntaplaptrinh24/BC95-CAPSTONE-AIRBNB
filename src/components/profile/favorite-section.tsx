@@ -1,50 +1,28 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import {
+  useMemo,
+  useSyncExternalStore,
+} from "react";
+import RoomCard from "@/components/room/room-card";
+import {
+  getFavoritesSnapshot,
+  getServerFavoritesSnapshot,
+  parseFavorites,
+  subscribeFavorites,
+} from "@/lib/favorite-storage";
 import type { Room } from "@/types/room";
 
-import RoomCard from "@/components/room/room-card";
-
-const FAVORITE_KEY = "airbnb-favorites";
-const EMPTY_FAVORITES: Room[] = [];
-
-// Cache theo giá trị raw để useSyncExternalStore không tạo mảng mới mỗi lần render.
-let cachedRaw: string | null = null;
-let cachedFavorites: Room[] = EMPTY_FAVORITES;
-
-function subscribeToFavorites(onStoreChange: () => void) {
-  window.addEventListener("favorites-changed", onStoreChange);
-
-  return () => {
-    window.removeEventListener("favorites-changed", onStoreChange);
-  };
-}
-
-function getFavoritesSnapshot(): Room[] {
-  const raw = localStorage.getItem(FAVORITE_KEY);
-
-  if (raw !== cachedRaw) {
-    cachedRaw = raw;
-
-    try {
-      cachedFavorites = raw ? (JSON.parse(raw) as Room[]) : EMPTY_FAVORITES;
-    } catch {
-      cachedFavorites = EMPTY_FAVORITES;
-    }
-  }
-
-  return cachedFavorites;
-}
-
-function getFavoritesServerSnapshot(): Room[] {
-  return EMPTY_FAVORITES;
-}
-
 export default function FavoriteSection() {
-  const favorites = useSyncExternalStore(
-    subscribeToFavorites,
+  const snapshot = useSyncExternalStore(
+    subscribeFavorites,
     getFavoritesSnapshot,
-    getFavoritesServerSnapshot,
+    getServerFavoritesSnapshot,
+  );
+
+  const favorites: Room[] = useMemo(
+    () => parseFavorites(snapshot),
+    [snapshot],
   );
 
   return (
