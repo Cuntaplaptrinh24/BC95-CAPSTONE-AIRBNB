@@ -1,51 +1,29 @@
 ﻿import axios from "axios";
-import {
-  notFound,
-} from "next/navigation";
-
-import type {
-  Room,
-} from "@/types/room";
-
-import {
-  getRoomById,
-} from "@/services/room-service";
-
-import {
-  getLocationById,
-} from "@/services/location-service";
-
-import {
-  getCommentsByRoom,
-} from "@/services/comment-service";
-
+import { notFound } from "next/navigation";
+import type { Room } from "@/types/room";
+import { getRoomById } from "@/services/room-service";
+import { getLocationById } from "@/services/location-service";
+import { getCommentsByRoom } from "@/services/comment-service";
 import SafeImage from "@/components/common/safe-image";
-
 import AmenityIcon, {
   getActiveAmenities,
 } from "@/components/room/amenities";
-
 import CommentSection from "@/components/room/comment-section";
 import LocationMap from "@/components/room/location-map";
 import BookingCard from "@/components/booking/booking-card";
 import DataErrorState from "@/components/common/data-error-state";
 
-export const dynamic =
-  "force-dynamic";
+export const dynamic = "force-dynamic";
 
-function parseId(
-  raw: string,
-): number {
+function parseId(raw: string): number {
   if (!/^\d+$/.test(raw)) {
     return -1;
   }
 
   const number = Number(raw);
 
-  return (
-    Number.isInteger(number) &&
+  return Number.isInteger(number) &&
     number >= 1
-  )
     ? number
     : -1;
 }
@@ -67,35 +45,27 @@ export default async function RoomDetailPage({
   params,
   searchParams,
 }: RoomDetailPageProps) {
-  const {
-    id: rawId,
-  } = await params;
-
-  const roomId =
-    parseId(rawId);
+  const { id: rawId } = await params;
+  const roomId = parseId(rawId);
 
   if (roomId === -1) {
     notFound();
   }
 
-  const query =
-    await searchParams;
+  const query = await searchParams;
 
   const initialCheckIn =
-    typeof query.checkIn ===
-    "string"
+    typeof query.checkIn === "string"
       ? query.checkIn
       : "";
 
   const initialCheckOut =
-    typeof query.checkOut ===
-    "string"
+    typeof query.checkOut === "string"
       ? query.checkOut
       : "";
 
   const rawGuests =
-    typeof query.guests ===
-    "string"
+    typeof query.guests === "string"
       ? query.guests
       : "";
 
@@ -113,17 +83,11 @@ export default async function RoomDetailPage({
   let room: Room;
 
   try {
-    room =
-      await getRoomById(
-        roomId,
-      );
+    room = await getRoomById(roomId);
   } catch (error: unknown) {
     if (
-      axios.isAxiosError(
-        error,
-      ) &&
-      error.response?.status ===
-        404
+      axios.isAxiosError(error) &&
+      error.response?.status === 404
     ) {
       notFound();
     }
@@ -153,20 +117,15 @@ export default async function RoomDetailPage({
     locationResult,
     commentsResult,
   ] = await Promise.allSettled([
-    getLocationById(
-      room.maViTri,
-    ),
-    getCommentsByRoom(
-      room.id,
-    ),
+    getLocationById(room.maViTri),
+    getCommentsByRoom(room.id),
   ]);
 
   if (
     locationResult.status ===
     "fulfilled"
   ) {
-    location =
-      locationResult.value;
+    location = locationResult.value;
   } else {
     locationFailed = true;
   }
@@ -176,8 +135,7 @@ export default async function RoomDetailPage({
     "fulfilled"
   ) {
     comments =
-      commentsResult.value ??
-      [];
+      commentsResult.value ?? [];
   } else {
     commentsFailed = true;
   }
@@ -204,26 +162,18 @@ export default async function RoomDetailPage({
       </div>
 
       {/* Bố cục hai cột */}
-      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
+      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Thông tin phòng */}
-        <div>
+        <div className="min-w-0 [overflow-wrap:anywhere]">
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
             {room.tenPhong}
           </h1>
 
           {location ? (
             <p className="mt-1 text-sm text-secondary">
-              {
-                location.tenViTri
-              }
-              ,{" "}
-              {
-                location.tinhThanh
-              }
-              ,{" "}
-              {
-                location.quocGia
-              }
+              {location.tenViTri},{" "}
+              {location.tinhThanh},{" "}
+              {location.quocGia}
             </p>
           ) : locationFailed ? (
             <div className="mt-2">
@@ -238,18 +188,15 @@ export default async function RoomDetailPage({
             </span>
 
             <span>
-              {room.phongNgu}{" "}
-              phòng ngủ
+              {room.phongNgu} phòng ngủ
             </span>
 
             <span>
-              {room.giuong}{" "}
-              giường
+              {room.giuong} giường
             </span>
 
             <span>
-              {room.phongTam}{" "}
-              phòng tắm
+              {room.phongTam} phòng tắm
             </span>
           </div>
 
@@ -265,8 +212,7 @@ export default async function RoomDetailPage({
           </div>
 
           {/* Tiện nghi */}
-          {amenities.length >
-            0 && (
+          {amenities.length > 0 && (
             <div className="mt-8">
               <h2 className="text-lg font-semibold text-foreground">
                 Tiện nghi
@@ -283,9 +229,7 @@ export default async function RoomDetailPage({
                     >
                       <AmenityIcon className="text-brand" />
 
-                      {
-                        amenity.label
-                      }
+                      {amenity.label}
                     </li>
                   ),
                 )}
@@ -314,7 +258,7 @@ export default async function RoomDetailPage({
         </div>
 
         {/* Thẻ đặt phòng */}
-        <div className="lg:sticky lg:top-24 lg:self-start">
+        <div className="w-full min-w-0 lg:sticky lg:top-24 lg:self-start">
           <BookingCard
             room={room}
             initialCheckIn={

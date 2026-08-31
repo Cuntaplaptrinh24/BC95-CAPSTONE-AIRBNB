@@ -18,19 +18,43 @@ function formatUsd(price: number): string {
   return `$${price.toLocaleString("en-US")} / đêm`;
 }
 
-function buildHref(roomId: number, query?: RoomCardQuery): string {
+function buildHref(
+  roomId: number,
+  query?: RoomCardQuery,
+): string {
   const params = new URLSearchParams();
-  if (query?.checkIn) params.set("checkIn", query.checkIn);
-  if (query?.checkOut) params.set("checkOut", query.checkOut);
-  if (query?.guests !== undefined && query.guests >= 1) {
-    params.set("guests", String(query.guests));
+
+  if (query?.checkIn) {
+    params.set("checkIn", query.checkIn);
   }
-  const qs = params.toString();
-  return qs ? `/rooms/${roomId}?${qs}` : `/rooms/${roomId}`;
+
+  if (query?.checkOut) {
+    params.set("checkOut", query.checkOut);
+  }
+
+  if (
+    query?.guests !== undefined &&
+    query.guests >= 1
+  ) {
+    params.set(
+      "guests",
+      String(query.guests),
+    );
+  }
+
+  const queryString = params.toString();
+
+  return queryString
+    ? `/rooms/${roomId}?${queryString}`
+    : `/rooms/${roomId}`;
 }
 
-export default function RoomCard({ room, query }: RoomCardProps) {
+export default function RoomCard({
+  room,
+  query,
+}: RoomCardProps) {
   const href = buildHref(room.id, query);
+
   return (
     <div className="group rounded-xl bg-transparent">
       <div className="relative aspect-square overflow-hidden rounded-xl">
@@ -52,8 +76,10 @@ export default function RoomCard({ room, query }: RoomCardProps) {
             </div>
           )}
         </Link>
-        <FavoriteButton />
+
+        <FavoriteButton room={room} />
       </div>
+
       <Link
         href={href}
         className="block pt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
@@ -61,11 +87,16 @@ export default function RoomCard({ room, query }: RoomCardProps) {
         <h3 className="truncate text-sm font-semibold text-foreground">
           {room.tenPhong}
         </h3>
+
         <p className="truncate text-xs text-secondary">
-          {room.khach} khách · {room.phongNgu} phòng ngủ · {room.giuong} giường
+          {room.khach} khách · {room.phongNgu} phòng
+          ngủ · {room.giuong} giường
         </p>
+
         <p className="mt-1 text-sm text-foreground">
-          <span className="font-semibold">{formatUsd(room.giaTien)}</span>
+          <span className="font-semibold">
+            {formatUsd(room.giaTien)}
+          </span>
         </p>
       </Link>
     </div>

@@ -1,44 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useMemo,
+  useSyncExternalStore,
+} from "react";
+import RoomCard from "@/components/room/room-card";
+import {
+  getFavoritesSnapshot,
+  getServerFavoritesSnapshot,
+  parseFavorites,
+  subscribeFavorites,
+} from "@/lib/favorite-storage";
 import type { Room } from "@/types/room";
 
-import RoomCard from "@/components/room/room-card";
-
-const FAVORITE_KEY = "airbnb-favorites";
-
 export default function FavoriteSection() {
-  const [favorites, setFavorites] = useState<Room[]>(
-    [],
+  const snapshot = useSyncExternalStore(
+    subscribeFavorites,
+    getFavoritesSnapshot,
+    getServerFavoritesSnapshot,
   );
 
-  const loadFavorites = () => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem(FAVORITE_KEY) || "[]",
-      ) as Room[];
-
-      setFavorites(saved);
-    } catch {
-      setFavorites([]);
-    }
-  };
-
-  useEffect(() => {
-    loadFavorites();
-
-    window.addEventListener(
-      "favorites-changed",
-      loadFavorites,
-    );
-
-    return () => {
-      window.removeEventListener(
-        "favorites-changed",
-        loadFavorites,
-      );
-    };
-  }, []);
+  const favorites: Room[] = useMemo(
+    () => parseFavorites(snapshot),
+    [snapshot],
+  );
 
   return (
     <section className="mt-10 border-t border-border pt-8">

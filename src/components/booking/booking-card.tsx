@@ -4,37 +4,16 @@ import {
   useMemo,
   useState,
 } from "react";
-
-import type {
-  Room,
-} from "@/types/room";
-
-import type {
-  CreateBookingPayload,
-} from "@/types/booking";
-
-import {
-  useAuthStore,
-} from "@/store/auth-store";
-
-import {
-  buildAuthHeaders,
-} from "@/lib/api-client";
-
-import {
-  normalizeApiError,
-} from "@/lib/api-error";
-
-import {
-  requestAuthModal,
-} from "@/lib/auth-events";
-
-import {
-  showToast,
-} from "@/components/common/toast";
-
+import type { Room } from "@/types/room";
+import type { CreateBookingPayload } from "@/types/booking";
+import { useAuthStore } from "@/store/auth-store";
+import { buildAuthHeaders } from "@/lib/api-client";
+import { normalizeApiError } from "@/lib/api-error";
+import { requestAuthModal } from "@/lib/auth-events";
+import { showToast } from "@/components/common/toast";
 import {
   createBooking,
+  hasRoomBookingConflict,
 } from "@/services/booking-service";
 
 interface BookingCardProps {
@@ -49,7 +28,6 @@ const MS_PER_DAY =
 
 function todayISO(): string {
   const date = new Date();
-
   const offset =
     date.getTimezoneOffset();
 
@@ -90,19 +68,27 @@ export default function BookingCard({
     hasHydrated,
   } = useAuthStore();
 
-  const [checkIn, setCheckIn] =
-    useState(initialCheckIn);
+  const [
+    checkIn,
+    setCheckIn,
+  ] = useState(initialCheckIn);
 
-  const [checkOut, setCheckOut] =
-    useState(initialCheckOut);
+  const [
+    checkOut,
+    setCheckOut,
+  ] = useState(initialCheckOut);
 
-  const [guests, setGuests] =
-    useState<string>(
-      String(initialGuests),
-    );
+  const [
+    guests,
+    setGuests,
+  ] = useState<string>(
+    String(initialGuests),
+  );
 
-  const [submitting, setSubmitting] =
-    useState(false);
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
 
   const [
     validationMsg,
@@ -110,9 +96,7 @@ export default function BookingCard({
   ] = useState("");
 
   const today = todayISO();
-
-  const guestCount =
-    Number(guests);
+  const guestCount = Number(guests);
 
   const nights =
     checkIn &&
@@ -134,41 +118,36 @@ export default function BookingCard({
       ? nights * room.giaTien
       : 0;
 
-  const validate =
-    (): string | null => {
-      if (!checkIn) {
-        return "Vui lòng chọn ngày nhận phòng.";
-      }
+  const validate = (): string | null => {
+    if (!checkIn) {
+      return "Vui lòng chọn ngày nhận phòng.";
+    }
 
-      if (!checkOut) {
-        return "Vui lòng chọn ngày trả phòng.";
-      }
+    if (!checkOut) {
+      return "Vui lòng chọn ngày trả phòng.";
+    }
 
-      if (checkIn < today) {
-        return "Ngày nhận phòng không được ở quá khứ.";
-      }
+    if (checkIn < today) {
+      return "Ngày nhận phòng không được ở quá khứ.";
+    }
 
-      if (checkOut <= checkIn) {
-        return "Ngày trả phòng phải sau ngày nhận phòng.";
-      }
+    if (checkOut <= checkIn) {
+      return "Ngày trả phòng phải sau ngày nhận phòng.";
+    }
 
-      if (
-        !Number.isInteger(
-          guestCount,
-        ) ||
-        guestCount < 1
-      ) {
-        return "Số khách phải là số nguyên từ 1.";
-      }
+    if (
+      !Number.isInteger(guestCount) ||
+      guestCount < 1
+    ) {
+      return "Số khách phải là số nguyên từ 1.";
+    }
 
-      if (
-        guestCount > room.khach
-      ) {
-        return `Phòng tối đa ${room.khach} khách.`;
-      }
+    if (guestCount > room.khach) {
+      return `Phòng tối đa ${room.khach} khách.`;
+    }
 
-      return null;
-    };
+    return null;
+  };
 
   const handleCheckInChange = (
     value: string,
@@ -185,99 +164,106 @@ export default function BookingCard({
     }
   };
 
-  const handleSubmit =
-    async () => {
-      if (submitting) {
-        return;
-      }
+  const handleSubmit = async () => {
+    if (submitting) {
+      return;
+    }
 
-      const message = validate();
+    const message = validate();
 
-      if (message) {
-        setValidationMsg(
-          message,
+    if (message) {
+      setValidationMsg(message);
+      return;
+    }
+
+    setValidationMsg("");
+
+    if (
+      !hasHydrated ||
+      !isAuthenticated ||
+      !user ||
+      !accessToken
+    ) {
+      showToast(
+        "error",
+        "Vui lòng đăng nhập để đặt phòng.",
+      );
+
+      requestAuthModal();
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const hasConflict =
+        await hasRoomBookingConflict(
+          room.id,
+          checkIn,
+          checkOut,
         );
 
-        return;
-      }
-
-      setValidationMsg("");
-
-      if (
-        !hasHydrated ||
-        !isAuthenticated ||
-        !user ||
-        !accessToken
-      ) {
+      if (hasConflict) {
         showToast(
           "error",
-          "Vui lòng đăng nhập để đặt phòng.",
+          "Phòng đã có người đặt trong khoảng thời gian này.",
         );
-
-        requestAuthModal();
-
         return;
       }
 
-      setSubmitting(true);
+      const payload:
+        CreateBookingPayload = {
+        id: 0,
+        maPhong: room.id,
+        ngayDen:
+          toApiDate(checkIn),
+        ngayDi:
+          toApiDate(checkOut),
+        soLuongKhach:
+          guestCount,
+        maNguoiDung: user.id,
+      };
 
-      try {
-        const payload:
-          CreateBookingPayload = {
-          id: 0,
-          maPhong: room.id,
-          ngayDen:
-            toApiDate(checkIn),
-          ngayDi:
-            toApiDate(checkOut),
-          soLuongKhach:
-            guestCount,
-          maNguoiDung: user.id,
-        };
-
-        await createBooking(
-          payload,
-          buildAuthHeaders(
-            accessToken,
-          ),
-        );
-
-        showToast(
-          "success",
-          "Đặt phòng thành công!",
-        );
-      } catch (error: unknown) {
-        const apiError =
-          normalizeApiError(error);
-
-        showToast(
-          "error",
-          apiError.message,
-        );
-      } finally {
-        setSubmitting(false);
-      }
-    };
-
-  const guestOptions =
-    useMemo(
-      () =>
-        Array.from(
-          {
-            length: room.khach,
-          },
-          (_, index) =>
-            index + 1,
+      await createBooking(
+        payload,
+        buildAuthHeaders(
+          accessToken,
         ),
-      [room.khach],
-    );
+      );
+
+      showToast(
+        "success",
+        "Đặt phòng thành công!",
+      );
+    } catch (error: unknown) {
+      const apiError =
+        normalizeApiError(error);
+
+      showToast(
+        "error",
+        apiError.message,
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const guestOptions = useMemo(
+    () =>
+      Array.from(
+        {
+          length: room.khach,
+        },
+        (_, index) =>
+          index + 1,
+      ),
+    [room.khach],
+  );
 
   return (
     <div className="rounded-xl border border-border p-6 shadow-sm">
       <p className="text-xl font-semibold text-foreground">
-        {formatUsd(
-          room.giaTien,
-        )}
+        {formatUsd(room.giaTien)}
       </p>
 
       <div className="mt-4 space-y-3">
@@ -315,15 +301,12 @@ export default function BookingCard({
             <input
               id="bk-checkout"
               type="date"
-              min={
-                checkIn || today
-              }
+              min={checkIn || today}
               value={checkOut}
               onChange={(event) => {
                 setCheckOut(
                   event.target.value,
                 );
-
                 setValidationMsg("");
               }}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
@@ -346,7 +329,6 @@ export default function BookingCard({
               setGuests(
                 event.target.value,
               );
-
               setValidationMsg("");
             }}
             className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
