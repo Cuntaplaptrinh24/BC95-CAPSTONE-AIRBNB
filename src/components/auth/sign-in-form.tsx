@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signInSchema, type SignInFormValues } from '@/lib/validations/auth-schema';
@@ -16,7 +17,11 @@ interface SignInFormProps {
 
 export default function SignInForm({ onSuccess, onSwitchToSignUp }: SignInFormProps) {
   const setAuth = useAuthStore((s) => s.setAuth);
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  // Khi tài khoản đăng nhập có quyền Admin, hiển thị màn hình cho chọn
+  // vào với tư cách User hay chuyển sang khu vực quản trị.
+  const [askAdminChoice, setAskAdminChoice] = useState(false);
 
   const {
     register,
@@ -32,12 +37,54 @@ export default function SignInForm({ onSuccess, onSwitchToSignUp }: SignInFormPr
       const result = await signIn(values);
       setAuth(result.user, result.token);
       showToast('success', 'Đăng nhập thành công.');
+
+      if (result.user.role === 'ADMIN') {
+        setAskAdminChoice(true);
+        return;
+      }
+
       onSuccess();
     } catch (error) {
       const apiError = normalizeApiError(error);
       showToast('error', apiError.message);
     }
   };
+
+  function continueAsUser() {
+    onSuccess();
+  }
+
+  function continueAsAdmin() {
+    onSuccess();
+    router.push('/admin');
+  }
+
+  if (askAdminChoice) {
+    return (
+      <div className="flex flex-col gap-4">
+        <h2 className="text-xl font-semibold text-gray-900">Đăng nhập thành công</h2>
+        <p className="text-sm text-gray-600">
+          Tài khoản này có quyền quản trị. Bạn muốn tiếp tục với tư cách nào?
+        </p>
+
+        <button
+          type="button"
+          onClick={continueAsUser}
+          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-50"
+        >
+          Tiếp tục với tư cách User
+        </button>
+
+        <button
+          type="button"
+          onClick={continueAsAdmin}
+          className="rounded-lg bg-[#FF385C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d90b3e]"
+        >
+          Vào khu vực quản trị
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
