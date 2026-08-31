@@ -1,9 +1,6 @@
 ﻿"use client";
 
-import {
-  useMemo,
-  useState,
-} from "react";
+import { useMemo, useState } from "react";
 import type { Room } from "@/types/room";
 import type { CreateBookingPayload } from "@/types/booking";
 import { useAuthStore } from "@/store/auth-store";
@@ -11,10 +8,7 @@ import { buildAuthHeaders } from "@/lib/api-client";
 import { normalizeApiError } from "@/lib/api-error";
 import { requestAuthModal } from "@/lib/auth-events";
 import { showToast } from "@/components/common/toast";
-import {
-  createBooking,
-  hasRoomBookingConflict,
-} from "@/services/booking-service";
+import { createBooking } from "@/services/booking-service";
 
 interface BookingCardProps {
   room: Room;
@@ -23,36 +17,25 @@ interface BookingCardProps {
   initialGuests?: number;
 }
 
-const MS_PER_DAY =
-  24 * 60 * 60 * 1000;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function todayISO(): string {
   const date = new Date();
-  const offset =
-    date.getTimezoneOffset();
+  const offset = date.getTimezoneOffset();
 
-  const localDate = new Date(
-    date.getTime() -
-      offset * 60 * 1000,
-  );
-
-  return localDate
+  return new Date(
+    date.getTime() - offset * 60 * 1000,
+  )
     .toISOString()
     .slice(0, 10);
 }
 
-function toApiDate(
-  dateString: string,
-): string {
-  return `${dateString}T00:00:00.000Z`;
+function toApiDate(date: string): string {
+  return `${date}T00:00:00.000Z`;
 }
 
-function formatUsd(
-  price: number,
-): string {
-  return `$${price.toLocaleString(
-    "en-US",
-  )} / đêm`;
+function formatUsd(price: number): string {
+  return `$${price.toLocaleString("en-US")} / đêm`;
 }
 
 export default function BookingCard({
@@ -68,32 +51,21 @@ export default function BookingCard({
     hasHydrated,
   } = useAuthStore();
 
-  const [
-    checkIn,
-    setCheckIn,
-  ] = useState(initialCheckIn);
+  const [checkIn, setCheckIn] =
+    useState(initialCheckIn);
 
-  const [
-    checkOut,
-    setCheckOut,
-  ] = useState(initialCheckOut);
+  const [checkOut, setCheckOut] =
+    useState(initialCheckOut);
 
-  const [
-    guests,
-    setGuests,
-  ] = useState<string>(
+  const [guests, setGuests] = useState(
     String(initialGuests),
   );
 
-  const [
-    submitting,
-    setSubmitting,
-  ] = useState(false);
+  const [submitting, setSubmitting] =
+    useState(false);
 
-  const [
-    validationMsg,
-    setValidationMsg,
-  ] = useState("");
+  const [validationMsg, setValidationMsg] =
+    useState("");
 
   const today = todayISO();
   const guestCount = Number(guests);
@@ -103,12 +75,8 @@ export default function BookingCard({
     checkOut &&
     checkOut > checkIn
       ? Math.round(
-          (new Date(
-            checkOut,
-          ).getTime() -
-            new Date(
-              checkIn,
-            ).getTime()) /
+          (new Date(checkOut).getTime() -
+            new Date(checkIn).getTime()) /
             MS_PER_DAY,
         )
       : 0;
@@ -117,6 +85,15 @@ export default function BookingCard({
     nights > 0
       ? nights * room.giaTien
       : 0;
+
+  const guestOptions = useMemo(
+    () =>
+      Array.from(
+        { length: room.khach },
+        (_, index) => index + 1,
+      ),
+    [room.khach],
+  );
 
   const validate = (): string | null => {
     if (!checkIn) {
@@ -196,39 +173,18 @@ export default function BookingCard({
     setSubmitting(true);
 
     try {
-      const hasConflict =
-        await hasRoomBookingConflict(
-          room.id,
-          checkIn,
-          checkOut,
-        );
-
-      if (hasConflict) {
-        showToast(
-          "error",
-          "Phòng đã có người đặt trong khoảng thời gian này.",
-        );
-        return;
-      }
-
-      const payload:
-        CreateBookingPayload = {
+      const payload: CreateBookingPayload = {
         id: 0,
         maPhong: room.id,
-        ngayDen:
-          toApiDate(checkIn),
-        ngayDi:
-          toApiDate(checkOut),
-        soLuongKhach:
-          guestCount,
+        ngayDen: toApiDate(checkIn),
+        ngayDi: toApiDate(checkOut),
+        soLuongKhach: guestCount,
         maNguoiDung: user.id,
       };
 
       await createBooking(
         payload,
-        buildAuthHeaders(
-          accessToken,
-        ),
+        buildAuthHeaders(accessToken),
       );
 
       showToast(
@@ -236,29 +192,14 @@ export default function BookingCard({
         "Đặt phòng thành công!",
       );
     } catch (error: unknown) {
-      const apiError =
-        normalizeApiError(error);
-
       showToast(
         "error",
-        apiError.message,
+        normalizeApiError(error).message,
       );
     } finally {
       setSubmitting(false);
     }
   };
-
-  const guestOptions = useMemo(
-    () =>
-      Array.from(
-        {
-          length: room.khach,
-        },
-        (_, index) =>
-          index + 1,
-      ),
-    [room.khach],
-  );
 
   return (
     <div className="rounded-xl border border-border p-6 shadow-sm">
@@ -333,16 +274,14 @@ export default function BookingCard({
             }}
             className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
           >
-            {guestOptions.map(
-              (number) => (
-                <option
-                  key={number}
-                  value={number}
-                >
-                  {number} khách
-                </option>
-              ),
-            )}
+            {guestOptions.map((number) => (
+              <option
+                key={number}
+                value={number}
+              >
+                {number} khách
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -357,17 +296,12 @@ export default function BookingCard({
         <div className="mt-4 space-y-1 border-t border-border pt-4 text-sm text-foreground">
           <div className="flex justify-between">
             <span>
-              {formatUsd(
-                room.giaTien,
-              )}{" "}
-              × {nights} đêm
+              {formatUsd(room.giaTien)} ×{" "}
+              {nights} đêm
             </span>
 
             <span>
-              $
-              {total.toLocaleString(
-                "en-US",
-              )}
+              ${total.toLocaleString("en-US")}
             </span>
           </div>
 
@@ -375,10 +309,7 @@ export default function BookingCard({
             <span>Tổng</span>
 
             <span>
-              $
-              {total.toLocaleString(
-                "en-US",
-              )}
+              ${total.toLocaleString("en-US")}
             </span>
           </div>
         </div>
