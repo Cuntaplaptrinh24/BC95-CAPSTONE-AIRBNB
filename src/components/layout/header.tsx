@@ -7,7 +7,10 @@ import {
   type FormEvent,
 } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {
+  usePathname,
+  useRouter,
+} from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import AuthModal from "@/components/auth/auth-modal";
 import {
@@ -141,6 +144,8 @@ export default function Header() {
     );
   };
 
+  const pathname = usePathname();
+
   useEffect(() => {
     const openAuth = () => {
       setMenuOpen(false);
@@ -220,6 +225,11 @@ export default function Header() {
     setAuthView("signup");
     setAuthOpen(true);
   };
+
+  // Khu vực Admin có thanh điều hướng riêng, không hiển thị Header của User.
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
 
   return (
     <>
