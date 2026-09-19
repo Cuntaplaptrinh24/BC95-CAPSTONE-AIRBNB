@@ -1,3 +1,7 @@
+// Khung màn hình dùng chung cho mọi trang quản trị cần đăng nhập.
+// Next.js tự bọc khung này quanh mọi trang nằm trong thư mục (protected),
+// nên không phải viết lại ở từng trang.
+
 import AdminGuard from '@/components/admin/admin-guard';
 import AdminSidebar from '@/components/admin/admin-sidebar';
 import AdminTopbar from '@/components/admin/admin-topbar';
@@ -6,11 +10,11 @@ interface AdminProtectedLayoutProps {
   children: React.ReactNode;
 }
 
-// Khung sườn dùng chung cho toàn bộ trang Admin cần đăng nhập:
-// kiểm tra quyền (AdminGuard) + menu điều hướng + thanh trên cùng.
 export default function AdminProtectedLayout({
   children,
 }: AdminProtectedLayoutProps) {
+  // Bọc ngoài cùng là lớp kiểm tra quyền, bên trong mới là menu bên trái,
+  // thanh trên cùng, và phần nội dung riêng của từng trang (children).
   return (
     <AdminGuard>
       <div className="flex min-h-[calc(100vh-5rem)] flex-col md:flex-row">

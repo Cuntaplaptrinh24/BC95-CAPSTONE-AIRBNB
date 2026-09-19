@@ -14,8 +14,9 @@ import { showToast } from '@/components/common/toast';
 import { normalizeApiError } from '@/lib/api-error';
 import { USER_ROLES, type User } from '@/types/user';
 
-// Gộp chung 2 schema tạo mới/chỉnh sửa: mật khẩu chỉ bắt buộc khi tạo mới,
-// nên khai báo là optional ở đây để dùng chung một form.
+// Một form dùng cho cả hai việc: thêm mới và sửa.
+// Khác nhau duy nhất là mật khẩu, chỉ bắt buộc khi thêm mới, nên ở đây khai báo
+// có dấu hỏi nghĩa là có cũng được không có cũng được.
 interface AdminUserFormValues {
   name: string;
   email: string;
@@ -26,18 +27,24 @@ interface AdminUserFormValues {
   password?: string;
 }
 
+// user để trống nghĩa là đang thêm mới, có dữ liệu nghĩa là đang sửa người đó.
+// onClose gọi khi bấm đóng, onSaved gọi khi lưu xong để panel tải lại danh sách.
 interface UserFormModalProps {
   user: User | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-// Modal thêm mới / chỉnh sửa người dùng. Chế độ tạo mới yêu cầu thêm mật khẩu,
-// chế độ chỉnh sửa thì không (API cập nhật người dùng không nhận mật khẩu).
+// Hộp form thêm mới và sửa người dùng.
+// Thêm mới thì có ô mật khẩu, sửa thì không, vì API cập nhật không nhận mật khẩu.
 export default function UserFormModal({ user, onClose, onSaved }: UserFormModalProps) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const currentUser = useAuthStore((s) => s.user);
+  // Hai cờ quyết định form hiện ra thế nào.
   const isEditMode = user !== null;
+
+  // Đang sửa chính tài khoản mình đăng nhập thì khóa ô vai trò,
+  // tránh tự hạ quyền của mình rồi mất đường vào khu quản trị.
   const isEditingSelf = isEditMode && user.id === currentUser?.id;
 
   const {
@@ -46,9 +53,14 @@ export default function UserFormModal({ user, onClose, onSaved }: UserFormModalP
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<AdminUserFormValues>({
+    // Chọn bộ quy tắc kiểm tra tùy chế độ: sửa thì không đòi mật khẩu,
+    // thêm mới thì đòi.
     resolver: zodResolver(
       isEditMode ? adminUpdateUserSchema : adminCreateUserSchema,
     ) as Resolver<AdminUserFormValues>,
+
+    // Giá trị điền sẵn khi form mở ra: sửa thì đổ dữ liệu cũ vào,
+    // thêm mới thì để trống.
     defaultValues: isEditMode
       ? {
           name: user.name,
@@ -71,14 +83,17 @@ export default function UserFormModal({ user, onClose, onSaved }: UserFormModalP
         },
   });
 
+  // Chạy khi bấm Lưu và mọi ô đã hợp lệ.
   const onSubmit = async (values: AdminUserFormValues) => {
     if (!accessToken) {
       return;
     }
 
+    // Thêm token của người đang đăng nhập vào lời gọi API, để server biết ai đang sửa.
     const authHeader = buildAuthHeaders(accessToken);
 
     try {
+      // Cùng một form nhưng gọi hai API khác nhau tùy chế độ.
       if (isEditMode) {
         await updateUser(user.id, { id: user.id, ...values }, authHeader);
         showToast('success', 'Đã cập nhật người dùng.');
@@ -94,6 +109,8 @@ export default function UserFormModal({ user, onClose, onSaved }: UserFormModalP
   };
 
   return (
+    // Lớp nền đen mờ phủ kín màn hình, hộp form nằm giữa.
+    // max-h-[90vh] cùng overflow-y-auto để form dài vẫn cuộn được trong hộp.
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">

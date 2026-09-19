@@ -1,3 +1,7 @@
+// Thanh phân trang dùng chung cho các bảng quản lý.
+// Mỗi số trang là một đường dẫn thật chứ không phải nút bấm, nên bấm vào là
+// đổi địa chỉ trang, và trang quản lý bên kia tự gọi lại API để lấy đúng trang đó.
+
 import Link from 'next/link';
 
 interface AdminPaginationProps {
@@ -7,6 +11,8 @@ interface AdminPaginationProps {
   keyword?: string;
 }
 
+// Ghép ra địa chỉ cho một số trang, ví dụ /admin/users?keyword=an&page=3.
+// Giữ lại từ khóa đang tìm để chuyển trang không làm mất kết quả tìm kiếm.
 function buildHref(basePath: string, page: number, keyword?: string): string {
   const params = new URLSearchParams();
   if (keyword) params.set('keyword', keyword);
@@ -14,6 +20,8 @@ function buildHref(basePath: string, page: number, keyword?: string): string {
   return `${basePath}?${params.toString()}`;
 }
 
+// Chọn tối đa 5 số trang hiện quanh trang đang xem, tránh việc có 50 trang
+// thì in ra 50 con số. Đang ở trang 10 thì hiện 8 9 10 11 12.
 function getWindowPages(current: number, total: number): number[] {
   const size = 5;
   const start = Math.max(1, current - Math.floor(size / 2));
@@ -24,18 +32,18 @@ function getWindowPages(current: number, total: number): number[] {
   return pages;
 }
 
-// Phân trang dùng chung cho các bảng quản lý ở Admin (điều hướng qua URL,
-// tương tự Pagination phía User nhưng dùng chung cho mọi resource).
 export default function AdminPagination({
   basePath,
   currentPage,
   totalPages,
   keyword,
 }: AdminPaginationProps) {
+  // Chỉ có một trang thì không cần vẽ thanh phân trang.
   if (totalPages <= 1) {
     return null;
   }
 
+  // Ở trang đầu thì mũi tên lùi mờ đi, ở trang cuối thì mũi tên tiến mờ đi.
   const prevDisabled = currentPage <= 1;
   const nextDisabled = currentPage >= totalPages;
   const windowPages = getWindowPages(currentPage, totalPages);

@@ -1,3 +1,6 @@
+// Hộp thoại hỏi lại trước khi làm việc không lùi được, chủ yếu là xóa.
+// Bản thân nó không biết đang xóa cái gì: màn hình gọi nó truyền vào tiêu đề,
+// mô tả, và hai hàm xử lý khi người dùng bấm xác nhận hoặc bấm hủy.
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -9,7 +12,6 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-// Hộp thoại xác nhận dùng chung cho các hành động nguy hiểm (xóa người dùng, xóa phòng...).
 export default function ConfirmDialog({
   open,
   title,
@@ -20,11 +22,13 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  // Đang đóng thì không vẽ gì cả.
   if (!open) {
     return null;
   }
 
   return (
+    // Lớp nền đen mờ phủ kín màn hình, hộp thoại nằm giữa.
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
         <p className="text-lg font-semibold text-foreground">{title}</p>
@@ -43,6 +47,7 @@ export default function ConfirmDialog({
             {cancelLabel}
           </button>
 
+          {/* Nút xác nhận để màu đỏ, nhắc người dùng đây là việc không lùi được */}
           <button
             type="button"
             onClick={onConfirm}

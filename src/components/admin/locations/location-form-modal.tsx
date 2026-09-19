@@ -26,8 +26,9 @@ interface LocationFormModalProps {
   onImageUploaded: () => void;
 }
 
-// Modal thêm mới / chỉnh sửa vị trí. Ảnh vị trí chỉ có thể tải lên sau khi
-// vị trí đã tồn tại (cần mã vị trí cho API upload), nên chỉ hiện ở chế độ sửa.
+// Hộp form thêm mới và sửa vị trí.
+// Phần chọn ảnh chỉ hiện khi đang sửa, vì API tải ảnh lên cần mã vị trí,
+// mà vị trí chưa tạo thì chưa có mã. Nên thêm mới xong phải mở lại để thêm ảnh.
 export default function LocationFormModal({
   location,
   onClose,
@@ -35,7 +36,10 @@ export default function LocationFormModal({
   onImageUploaded,
 }: LocationFormModalProps) {
   const accessToken = useAuthStore((s) => s.accessToken);
+  // location để trống nghĩa là đang thêm mới.
   const isEditMode = location !== null;
+
+  // Đang gửi ảnh lên server, dùng để hiện chữ đang tải và khóa nút.
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const {
@@ -44,6 +48,7 @@ export default function LocationFormModal({
     formState: { errors, isSubmitting },
   } = useForm<AdminLocationFormValues>({
     resolver: zodResolver(adminLocationSchema),
+    // Sửa thì đổ dữ liệu cũ vào các ô, thêm mới thì để trống.
     defaultValues: isEditMode
       ? {
           tenViTri: location.tenViTri,
@@ -57,6 +62,7 @@ export default function LocationFormModal({
         },
   });
 
+  // Chạy khi bấm Lưu và các ô đã hợp lệ.
   const onSubmit = async (values: AdminLocationFormValues) => {
     if (!accessToken) {
       return;
@@ -66,6 +72,7 @@ export default function LocationFormModal({
 
     try {
       if (isEditMode) {
+        // Gửi kèm hinhAnh cũ, vì API cập nhật nhận cả object, không gửi thì mất ảnh.
         await updateLocation(
           location.id,
           { id: location.id, ...values, hinhAnh: location.hinhAnh },
@@ -82,6 +89,8 @@ export default function LocationFormModal({
     }
   };
 
+  // Chạy khi người dùng chọn xong một file ảnh trong ô chọn ảnh.
+  // Ảnh gửi lên ngay lập tức, không chờ bấm Lưu, vì đây là API riêng.
   async function handleImageSelected(file: File) {
     if (!accessToken || !isEditMode) {
       return;
@@ -100,6 +109,8 @@ export default function LocationFormModal({
   }
 
   return (
+    // Lớp nền đen mờ phủ kín màn hình, hộp form nằm giữa.
+    // max-h-[90vh] cùng overflow-y-auto để form dài vẫn cuộn được trong hộp.
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">

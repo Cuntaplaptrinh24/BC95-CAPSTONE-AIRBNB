@@ -10,6 +10,7 @@ export default function AdminTopbar() {
   const router = useRouter();
 
   function handleLogout() {
+    // Xóa thông tin đăng nhập, báo một câu, rồi đưa về trang đăng nhập quản trị.
     logout();
     showToast('success', 'Đã đăng xuất khỏi khu vực quản trị.');
     router.replace('/admin/login');
@@ -20,6 +21,7 @@ export default function AdminTopbar() {
       <p className="text-sm font-semibold text-foreground">Quản trị hệ thống</p>
 
       <div className="flex items-center gap-3">
+        {/* Tên quản trị viên, ẩn đi trên màn hình hẹp cho đỡ chật */}
         <span className="hidden text-sm text-secondary sm:inline">
           {user?.name}
         </span>

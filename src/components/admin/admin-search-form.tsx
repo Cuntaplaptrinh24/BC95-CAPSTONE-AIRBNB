@@ -9,19 +9,27 @@ interface AdminSearchFormProps {
   placeholder?: string;
 }
 
-// Ô tìm kiếm dùng chung cho các trang danh sách ở Admin.
-// Cập nhật từ khóa qua URL (?keyword=...) để trang Server Component tự tải lại dữ liệu.
+// Ô tìm kiếm dùng chung cho các màn hình quản lý.
+// Bấm Tìm thì không tự gọi API, mà đổi địa chỉ trang thành dạng ?keyword=...
+// Trang quản lý chạy ở máy chủ, thấy địa chỉ đổi thì tự gọi API lấy kết quả mới.
+// Làm vậy để sao chép địa chỉ gửi cho người khác là ra đúng kết quả tìm kiếm đó.
 export default function AdminSearchForm({
   basePath,
   keyword = '',
   placeholder = 'Tìm kiếm...',
 }: AdminSearchFormProps) {
   const router = useRouter();
+
+  // Chữ đang gõ trong ô, giữ riêng ở đây nên gõ tới đâu hiện tới đó
+  // mà chưa động gì tới địa chỉ trang.
   const [value, setValue] = useState(keyword);
 
   function handleSubmit(event: React.FormEvent) {
+    // Chặn hành vi mặc định của trình duyệt là tải lại cả trang khi gửi form.
     event.preventDefault();
     const trimmed = value.trim();
+    // Bỏ trống thì về địa chỉ gốc, tức xem lại toàn bộ danh sách.
+    // encodeURIComponent mã hóa dấu cách và ký tự tiếng Việt cho hợp lệ trên địa chỉ.
     const query = trimmed ? `?keyword=${encodeURIComponent(trimmed)}` : '';
     router.push(`${basePath}${query}`);
   }

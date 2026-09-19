@@ -17,6 +17,8 @@ interface BookingsPanelProps {
   roomNameByCode: Record<number, string>;
 }
 
+// Đổi ngày từ dạng API trả về sang dạng quen mắt của người Việt, ví dụ 25/12/2026.
+// Gặp ngày không đọc được thì trả lại nguyên chuỗi gốc thay vì để trang vỡ.
 function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -25,12 +27,16 @@ function formatDate(value: string): string {
   return date.toLocaleDateString('vi-VN');
 }
 
-// Phần tương tác của trang Đặt phòng: bảng dữ liệu + sửa ngày/số khách + xóa.
-// Không có form tạo mới vì đặt phòng luôn phát sinh từ hành động của User.
+// Phần tương tác của trang Đặt phòng: vẽ bảng, sửa ngày và số khách, xóa lượt đặt.
+// Không có nút thêm mới, vì lượt đặt phòng chỉ phát sinh khi người dùng tự đặt.
 export default function BookingsPanel({ bookings, roomNameByCode }: BookingsPanelProps) {
+  // Dùng để bảo Next.js tải lại dữ liệu của trang sau khi thêm, sửa hoặc xóa xong.
   const router = useRouter();
+
+  // Token của người đang đăng nhập. Các thao tác ghi dữ liệu đều phải kèm token này.
   const accessToken = useAuthStore((s) => s.accessToken);
 
+  // editingBooking: lượt đặt đang mở form sửa. deleteTarget: lượt đặt đang chờ xác nhận xóa.
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -40,20 +46,26 @@ export default function BookingsPanel({ bookings, roomNameByCode }: BookingsPane
     router.refresh();
   }
 
+  // Chạy khi người dùng bấm Xóa trong hộp xác nhận.
   async function handleConfirmDelete() {
+    // Không có dòng nào đang chọn, hoặc không có token đăng nhập thì bỏ qua.
     if (!deleteTarget || !accessToken) {
       return;
     }
 
+    // Bật cờ đang xóa để nút chuyển sang chữ "Đang xử lý" và không bấm được hai lần.
     setIsDeleting(true);
     try {
       await deleteBooking(deleteTarget.id, buildAuthHeaders(accessToken));
+      // Xóa xong thì báo một câu, đóng hộp xác nhận, rồi bảo trang tải lại danh sách.
       showToast('success', 'Đã xóa đặt phòng.');
       setDeleteTarget(null);
       router.refresh();
     } catch (error) {
+      // Xóa hỏng thì hiện câu thông báo lấy từ lỗi server trả về.
       showToast('error', normalizeApiError(error).message);
     } finally {
+      // Chạy dù thành công hay thất bại, để nút không kẹt ở trạng thái đang xử lý.
       setIsDeleting(false);
     }
   }

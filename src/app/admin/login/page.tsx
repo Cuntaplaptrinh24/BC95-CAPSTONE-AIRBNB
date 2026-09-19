@@ -10,12 +10,15 @@ import { normalizeApiError } from '@/lib/api-error';
 import { useAuthStore } from '@/store/auth-store';
 import { showToast } from '@/components/common/toast';
 
-// Trang đăng nhập riêng cho khu vực Admin. Chỉ tài khoản có role ADMIN
-// mới được cấp phiên đăng nhập; tài khoản User bị từ chối ngay tại đây.
+// Trang đăng nhập riêng cho khu vực quản trị.
+// Tài khoản thường có nhập đúng mật khẩu cũng bị từ chối ngay tại đây.
 export default function AdminLoginPage() {
   const { isAuthenticated, user, hasHydrated, setAuth } = useAuthStore();
   const router = useRouter();
 
+  // Khai báo form. Phần resolver nối form với bản mô tả dữ liệu hợp lệ
+  // trong auth-schema, nhờ vậy nhập sai email hay mật khẩu ngắn quá
+  // là báo lỗi ngay dưới ô nhập, chưa cần gọi lên server.
   const {
     register,
     handleSubmit,
@@ -25,25 +28,33 @@ export default function AdminLoginPage() {
     defaultValues: { email: '', password: '' },
   });
 
+  // Đang là quản trị viên mà mở lại trang đăng nhập thì cho vào thẳng
+  // trang tổng quan, khỏi bắt đăng nhập lại.
   useEffect(() => {
     if (hasHydrated && isAuthenticated && user?.role === 'ADMIN') {
       router.replace('/admin');
     }
   }, [hasHydrated, isAuthenticated, user, router]);
 
+  // Chạy khi bấm nút Đăng nhập và dữ liệu nhập đã hợp lệ.
   const onSubmit = async (values: SignInFormValues) => {
     try {
+      // Gọi API đăng nhập, server trả về thông tin người dùng kèm token.
       const result = await signIn(values);
 
+      // Không phải quản trị viên thì dừng lại, không lưu phiên đăng nhập.
       if (result.user.role !== 'ADMIN') {
         showToast('error', 'Tài khoản này không có quyền quản trị.');
         return;
       }
 
+      // Lưu phiên đăng nhập vào kho dữ liệu chung để các trang khác dùng lại.
       setAuth(result.user, result.token);
       showToast('success', 'Đăng nhập quản trị thành công.');
       router.replace('/admin');
     } catch (error) {
+      // Sai mật khẩu, mất mạng, server lỗi đều rơi vào đây.
+      // normalizeApiError lấy ra câu thông báo gọn để hiện lên.
       const apiError = normalizeApiError(error);
       showToast('error', apiError.message);
     }

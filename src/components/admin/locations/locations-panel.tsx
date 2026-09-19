@@ -17,14 +17,20 @@ interface LocationsPanelProps {
   locations: Location[];
 }
 
-// Phần tương tác của trang Vị trí: bảng dữ liệu + thêm/sửa/xóa.
+// Phần tương tác của trang Vị trí: vẽ bảng và xử lý thêm, sửa, xóa.
+// Cấu trúc giống hệt panel Người dùng, chỉ khác cột hiển thị và API được gọi.
 export default function LocationsPanel({ locations }: LocationsPanelProps) {
+  // Dùng để bảo Next.js tải lại dữ liệu của trang sau khi thêm, sửa hoặc xóa xong.
   const router = useRouter();
+
+  // Token của người đang đăng nhập. Các thao tác ghi dữ liệu đều phải kèm token này.
   const accessToken = useAuthStore((s) => s.accessToken);
 
+  // editingLocation để trống nghĩa là đang thêm mới, có dữ liệu nghĩa là đang sửa.
   const [formOpen, setFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
 
+  // deleteTarget khác rỗng thì hộp xác nhận xóa hiện lên.
   const [deleteTarget, setDeleteTarget] = useState<Location | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -44,20 +50,26 @@ export default function LocationsPanel({ locations }: LocationsPanelProps) {
     router.refresh();
   }
 
+  // Chạy khi người dùng bấm Xóa trong hộp xác nhận.
   async function handleConfirmDelete() {
+    // Không có dòng nào đang chọn, hoặc không có token đăng nhập thì bỏ qua.
     if (!deleteTarget || !accessToken) {
       return;
     }
 
+    // Bật cờ đang xóa để nút chuyển sang chữ "Đang xử lý" và không bấm được hai lần.
     setIsDeleting(true);
     try {
       await deleteLocation(deleteTarget.id, buildAuthHeaders(accessToken));
+      // Xóa xong thì báo một câu, đóng hộp xác nhận, rồi bảo trang tải lại danh sách.
       showToast('success', 'Đã xóa vị trí.');
       setDeleteTarget(null);
       router.refresh();
     } catch (error) {
+      // Xóa hỏng thì hiện câu thông báo lấy từ lỗi server trả về.
       showToast('error', normalizeApiError(error).message);
     } finally {
+      // Chạy dù thành công hay thất bại, để nút không kẹt ở trạng thái đang xử lý.
       setIsDeleting(false);
     }
   }

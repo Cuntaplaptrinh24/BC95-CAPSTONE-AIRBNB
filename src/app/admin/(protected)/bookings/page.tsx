@@ -1,3 +1,5 @@
+// Trang quản lý Đặt phòng.
+
 import type { Metadata } from 'next';
 import { getBookings } from '@/services/booking-service';
 import { getRooms } from '@/services/room-service';
@@ -5,33 +7,51 @@ import AdminSearchForm from '@/components/admin/admin-search-form';
 import AdminPagination from '@/components/admin/admin-pagination';
 import BookingsPanel from '@/components/admin/bookings/bookings-panel';
 
+// Tiêu đề hiện trên tab trình duyệt khi mở trang này.
 export const metadata: Metadata = {
   title: 'Quản lý đặt phòng | Admin',
 };
 
+// Bắt Next.js dựng lại trang mỗi lần mở, không dùng bản đã lưu sẵn.
+// Dữ liệu quản trị thay đổi liên tục nên phải lấy mới, nếu không vừa thêm
+// một dòng xong quay lại danh sách vẫn thấy dữ liệu cũ.
 export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 10;
 const BASE_PATH = '/admin/bookings';
 
+// searchParams là phần đứng sau dấu hỏi trên địa chỉ, ví dụ ?keyword=an&page=2.
+// Ở Next.js phiên bản này nó về dạng phải chờ, nên bên dưới có await.
 interface AdminBookingsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-// API đặt phòng không có endpoint phân trang/tìm kiếm sẵn, nên Admin tải toàn bộ
-// danh sách rồi lọc + phân trang tại đây (số lượng đặt phòng của một dự án capstone
-// đủ nhỏ để làm việc này phía server mà không cần tối ưu thêm).
+// Khác các trang trước: API đặt phòng của CyberSoft không có sẵn chức năng
+// phân trang và tìm kiếm, nên trang này tải toàn bộ danh sách rồi tự lọc,
+// tự cắt thành từng trang. Số lượng đặt phòng trong bài đủ nhỏ để làm vậy.
 export default async function AdminBookingsPage({ searchParams }: AdminBookingsPageProps) {
+  // Chờ lấy phần tham số trên địa chỉ.
   const raw = await searchParams;
+
+  // Một tham số có thể xuất hiện nhiều lần trên địa chỉ, ví dụ ?page=1&page=2,
+  // khi đó nó về dạng danh sách. Lấy giá trị đầu tiên cho chắc.
   const rawPage = Array.isArray(raw.page) ? raw.page[0] : raw.page;
   const rawKeyword = Array.isArray(raw.keyword) ? raw.keyword[0] : raw.keyword;
 
+  // Không có số trang hoặc số trang không hợp lệ thì coi như trang 1.
+  // Từ khóa rỗng thì coi như không tìm kiếm.
   const pageIndex = Number(rawPage) > 0 ? Number(rawPage) : 1;
   const keyword = rawKeyword?.trim().toLowerCase() || undefined;
 
+  // Lấy cùng lúc toàn bộ lượt đặt và toàn bộ phòng.
   const [allBookings, rooms] = await Promise.all([getBookings(), getRooms()]);
+
+  // Mỗi lượt đặt chỉ lưu mã phòng chứ không lưu tên phòng. Dòng này dựng ra một
+  // bảng tra cứu từ mã sang tên, để bảng bên dưới hiện tên phòng cho dễ đọc.
   const roomNameByCode = Object.fromEntries(rooms.map((room) => [room.id, room.tenPhong]));
 
+  // Có từ khóa thì lọc theo tên phòng, mã phòng hoặc mã người đặt.
+  // Không có thì giữ nguyên cả danh sách.
   const filtered = keyword
     ? allBookings.filter((booking) => {
         const roomName = roomNameByCode[booking.maPhong] ?? '';
@@ -43,6 +63,8 @@ export default async function AdminBookingsPage({ searchParams }: AdminBookingsP
       })
     : allBookings;
 
+  // Tự cắt danh sách đã lọc thành từng trang: bỏ qua các dòng của những trang trước,
+  // rồi lấy đúng 10 dòng tiếp theo.
   const totalRow = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalRow / PAGE_SIZE));
   const startIndex = (pageIndex - 1) * PAGE_SIZE;

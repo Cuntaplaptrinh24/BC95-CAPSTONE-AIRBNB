@@ -21,8 +21,8 @@ interface RoomFormModalProps {
   onImageUploaded: () => void;
 }
 
-// Modal thêm mới / chỉnh sửa phòng thuê. Ảnh phòng chỉ có thể tải lên sau khi
-// phòng đã tồn tại (cần mã phòng cho API upload), nên chỉ hiện ở chế độ sửa.
+// Hộp form thêm mới và sửa phòng thuê, form dài nhất trong khu quản trị.
+// Giống vị trí, phần chọn ảnh chỉ hiện khi đang sửa vì API tải ảnh cần mã phòng.
 export default function RoomFormModal({
   room,
   locations,
@@ -31,6 +31,7 @@ export default function RoomFormModal({
   onImageUploaded,
 }: RoomFormModalProps) {
   const accessToken = useAuthStore((s) => s.accessToken);
+  // room để trống nghĩa là đang thêm mới.
   const isEditMode = room !== null;
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -40,6 +41,9 @@ export default function RoomFormModal({
     formState: { errors, isSubmitting },
   } = useForm<AdminRoomFormValues>({
     resolver: zodResolver(adminRoomSchema),
+    // Sửa thì đổ toàn bộ thông tin phòng cũ vào form.
+    // Thêm mới thì đặt giá trị mặc định hợp lý: chọn sẵn vị trí đầu danh sách,
+    // một khách, một phòng ngủ, và mọi tiện nghi đều chưa tích.
     defaultValues: isEditMode
       ? {
           tenPhong: room.tenPhong,
@@ -81,6 +85,7 @@ export default function RoomFormModal({
         },
   });
 
+  // Chạy khi bấm Lưu và các ô đã hợp lệ.
   const onSubmit = async (values: AdminRoomFormValues) => {
     if (!accessToken) {
       return;
@@ -106,6 +111,7 @@ export default function RoomFormModal({
     }
   };
 
+  // Ảnh phòng gửi lên ngay khi chọn xong, bằng một API riêng.
   async function handleImageSelected(file: File) {
     if (!accessToken || !isEditMode) {
       return;
@@ -124,6 +130,8 @@ export default function RoomFormModal({
   }
 
   return (
+    // Lớp nền đen mờ phủ kín màn hình, hộp form nằm giữa.
+    // max-h-[90vh] cùng overflow-y-auto để form dài vẫn cuộn được trong hộp.
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
@@ -175,6 +183,8 @@ export default function RoomFormModal({
             >
               Vị trí
             </label>
+            {/* valueAsNumber bảo form đổi chữ trong ô thành số trước khi kiểm tra,
+                vì mọi ô nhập của trình duyệt đều trả về chữ */}
             <select
               id="room-vitri"
               {...register('maViTri', { valueAsNumber: true })}
@@ -272,6 +282,8 @@ export default function RoomFormModal({
           <div>
             <span className="mb-1 block text-sm font-medium text-foreground">Tiện nghi</span>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {/* Chín tiện nghi đều là có hoặc không, nên khai báo thành một danh sách
+                  rồi vẽ ra chín ô tích giống nhau, khỏi viết tay chín lần */}
               {ROOM_AMENITY_FIELDS.map((amenity) => (
                 <label
                   key={amenity.key}

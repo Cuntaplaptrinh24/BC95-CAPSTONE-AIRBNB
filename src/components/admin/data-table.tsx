@@ -1,3 +1,14 @@
+// Bảng dữ liệu dùng chung cho cả năm màn hình quản lý.
+// Mỗi màn hình chỉ mô tả bảng của mình gồm những cột nào, còn phần vẽ bảng,
+// trạng thái đang tải và trạng thái không có dữ liệu thì dùng chung ở đây.
+
+// Mô tả một cột:
+//   key       tên riêng của cột, dùng để React phân biệt các cột với nhau
+//   header    chữ hiện ở dòng tiêu đề
+//   render    hàm nhận vào một dòng dữ liệu và trả về nội dung ô của cột đó
+//   className lớp trang trí thêm, có thể bỏ trống
+// Chữ T là kiểu dữ liệu của một dòng, để trống cho nơi gọi quyết định:
+// màn hình Người dùng truyền vào kiểu người dùng, màn hình Phòng truyền kiểu phòng.
 interface DataTableColumn<T> {
   key: string;
   header: string;
@@ -5,6 +16,12 @@ interface DataTableColumn<T> {
   className?: string;
 }
 
+// Những thứ màn hình gọi bảng phải truyền vào:
+//   columns      danh sách cột
+//   data         danh sách dòng
+//   rowKey       hàm lấy ra mã riêng của mỗi dòng, thường là id
+//   isLoading    đang tải dữ liệu hay không
+//   emptyMessage câu hiện khi danh sách rỗng
 interface DataTableProps<T> {
   columns: DataTableColumn<T>[];
   data: T[];
@@ -13,7 +30,6 @@ interface DataTableProps<T> {
   emptyMessage?: string;
 }
 
-// Bảng dữ liệu dùng chung cho các trang quản lý (Người dùng, Vị trí, Phòng thuê...).
 export default function DataTable<T>({
   columns,
   data,
@@ -24,6 +40,7 @@ export default function DataTable<T>({
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-white">
       <table className="w-full min-w-max text-left text-sm">
+        {/* Dòng tiêu đề: vẽ ra từ danh sách cột */}
         <thead>
           <tr className="border-b border-border bg-surface">
             {columns.map((column) => (
@@ -37,6 +54,7 @@ export default function DataTable<T>({
           </tr>
         </thead>
 
+        {/* Phần thân bảng có ba trạng thái: đang tải, không có dữ liệu, và có dữ liệu */}
         <tbody>
           {isLoading ? (
             <tr>
@@ -57,6 +75,7 @@ export default function DataTable<T>({
               </td>
             </tr>
           ) : (
+            // Mỗi dòng dữ liệu vẽ ra một hàng, trong hàng lại vẽ từng ô theo danh sách cột.
             data.map((row) => (
               <tr
                 key={rowKey(row)}

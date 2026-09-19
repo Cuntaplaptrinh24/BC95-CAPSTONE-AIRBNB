@@ -18,12 +18,16 @@ interface CommentsPanelProps {
   roomNameByCode: Record<number, string>;
 }
 
-// Phần tương tác của trang Bình luận: bảng dữ liệu + kiểm duyệt (sửa/xóa).
-// Không có form tạo mới vì bình luận luôn phát sinh từ hành động của User.
+// Phần tương tác của trang Bình luận: vẽ bảng, sửa nội dung và số sao, xóa bình luận.
+// Không có nút thêm mới, vì bình luận chỉ phát sinh khi người dùng tự viết.
 export default function CommentsPanel({ comments, roomNameByCode }: CommentsPanelProps) {
+  // Dùng để bảo Next.js tải lại dữ liệu của trang sau khi thêm, sửa hoặc xóa xong.
   const router = useRouter();
+
+  // Token của người đang đăng nhập. Các thao tác ghi dữ liệu đều phải kèm token này.
   const accessToken = useAuthStore((s) => s.accessToken);
 
+  // editingComment: bình luận đang mở form sửa. deleteTarget: bình luận đang chờ xác nhận xóa.
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Comment | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -33,20 +37,26 @@ export default function CommentsPanel({ comments, roomNameByCode }: CommentsPane
     router.refresh();
   }
 
+  // Chạy khi người dùng bấm Xóa trong hộp xác nhận.
   async function handleConfirmDelete() {
+    // Không có dòng nào đang chọn, hoặc không có token đăng nhập thì bỏ qua.
     if (!deleteTarget || !accessToken) {
       return;
     }
 
+    // Bật cờ đang xóa để nút chuyển sang chữ "Đang xử lý" và không bấm được hai lần.
     setIsDeleting(true);
     try {
       await deleteComment(deleteTarget.id, buildAuthHeaders(accessToken));
+      // Xóa xong thì báo một câu, đóng hộp xác nhận, rồi bảo trang tải lại danh sách.
       showToast('success', 'Đã xóa bình luận.');
       setDeleteTarget(null);
       router.refresh();
     } catch (error) {
+      // Xóa hỏng thì hiện câu thông báo lấy từ lỗi server trả về.
       showToast('error', normalizeApiError(error).message);
     } finally {
+      // Chạy dù thành công hay thất bại, để nút không kẹt ở trạng thái đang xử lý.
       setIsDeleting(false);
     }
   }

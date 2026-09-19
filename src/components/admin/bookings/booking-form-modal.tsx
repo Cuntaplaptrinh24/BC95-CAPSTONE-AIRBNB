@@ -20,8 +20,9 @@ interface BookingFormModalProps {
   onSaved: () => void;
 }
 
-// Modal chỉnh sửa đặt phòng. Admin chỉ điều chỉnh ngày đến/đi và số khách;
-// phòng và người đặt giữ nguyên vì gắn với giao dịch đặt phòng ban đầu.
+// Hộp form sửa lượt đặt phòng. Chỉ có chế độ sửa, không có thêm mới.
+// Quản trị chỉ đổi được ngày đến, ngày đi và số khách.
+// Phòng và người đặt giữ nguyên vì đó là thông tin của lần đặt ban đầu.
 export default function BookingFormModal({
   booking,
   roomName,
@@ -36,6 +37,8 @@ export default function BookingFormModal({
     formState: { errors, isSubmitting },
   } = useForm<AdminBookingFormValues>({
     resolver: zodResolver(adminBookingSchema),
+    // Ngày từ API có kèm cả giờ, ví dụ 2026-08-31T00:00:00. Ô chọn ngày của trình duyệt
+    // chỉ nhận phần ngày, nên cắt lấy 10 ký tự đầu.
     defaultValues: {
       ngayDen: booking.ngayDen ? booking.ngayDen.slice(0, 10) : '',
       ngayDi: booking.ngayDi ? booking.ngayDi.slice(0, 10) : '',
@@ -43,12 +46,15 @@ export default function BookingFormModal({
     },
   });
 
+  // Chạy khi bấm Lưu và các ô đã hợp lệ.
   const onSubmit = async (values: AdminBookingFormValues) => {
     if (!accessToken) {
       return;
     }
 
     try {
+      // API cập nhật đòi cả object, nên phải gửi kèm mã phòng và mã người đặt cũ,
+      // dù hai thứ đó không đổi. Thiếu là server hiểu thành xóa mất.
       await updateBooking(
         booking.id,
         {
@@ -67,6 +73,8 @@ export default function BookingFormModal({
   };
 
   return (
+    // Lớp nền đen mờ phủ kín màn hình, hộp form nằm giữa.
+    // max-h-[90vh] cùng overflow-y-auto để form dài vẫn cuộn được trong hộp.
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
       <div className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">

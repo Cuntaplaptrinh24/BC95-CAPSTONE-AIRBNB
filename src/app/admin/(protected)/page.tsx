@@ -1,3 +1,6 @@
+// Trang tổng quan, là trang đầu tiên hiện ra sau khi đăng nhập quản trị.
+// Chỉ hiện số lượng của từng loại dữ liệu, bấm vào một thẻ thì sang trang quản lý tương ứng.
+
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getUsersPaged } from '@/services/user-service';
@@ -6,22 +9,30 @@ import { getRoomsPaged } from '@/services/room-service';
 import { getBookings } from '@/services/booking-service';
 import { getComments } from '@/services/comment-service';
 
+// Tiêu đề hiện trên tab trình duyệt khi mở trang này.
 export const metadata: Metadata = {
   title: 'Tổng quan | Admin',
 };
 
+// Bắt Next.js dựng lại trang mỗi lần mở, không dùng bản đã lưu sẵn.
+// Dữ liệu quản trị thay đổi liên tục nên phải lấy mới, nếu không vừa thêm
+// một dòng xong quay lại danh sách vẫn thấy dữ liệu cũ.
 export const dynamic = 'force-dynamic';
 
+// Mô tả một thẻ số liệu: nhãn hiện lên, con số, và địa chỉ bấm vào sẽ đi tới.
 interface StatCard {
   label: string;
   value: number;
   href: string;
 }
 
-// Trang tổng quan Admin: hiển thị tổng số lượng của từng loại dữ liệu.
-// Với Người dùng/Vị trí/Phòng thuê, tận dụng endpoint phân trang sẵn có
-// (chỉ lấy 1 dòng) để đọc totalRow thay vì gọi thêm API lấy toàn bộ danh sách.
 export default async function AdminDashboardPage() {
+  // Gọi năm API cùng lúc cho nhanh.
+  //
+  // Ba API đầu chỉ xin một dòng dữ liệu, vì thứ cần lấy là tổng số dòng chứ không
+  // phải nội dung. Xin một dòng vẫn nhận được tổng số, mà không phải tải cả danh sách.
+  //
+  // Hai API cuối không có chức năng phân trang nên buộc phải tải hết rồi đếm.
   const [userStats, locationStats, roomStats, bookings, comments] = await Promise.all([
     getUsersPaged({ pageIndex: 1, pageSize: 1 }),
     getLocationsPaged({ pageIndex: 1, pageSize: 1 }),
@@ -30,6 +41,7 @@ export default async function AdminDashboardPage() {
     getComments(),
   ]);
 
+  // Gom năm con số thành một danh sách, phần bên dưới vẽ ra năm thẻ giống nhau.
   const cards: StatCard[] = [
     { label: 'Người dùng', value: userStats.totalRow, href: '/admin/users' },
     { label: 'Vị trí', value: locationStats.totalRow, href: '/admin/locations' },

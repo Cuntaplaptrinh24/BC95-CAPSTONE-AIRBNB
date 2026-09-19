@@ -20,7 +20,8 @@ interface CommentFormModalProps {
   onSaved: () => void;
 }
 
-// Modal kiểm duyệt bình luận: chỉ chỉnh nội dung và số sao.
+// Hộp form kiểm duyệt bình luận. Chỉ sửa được nội dung và số sao.
+// Phòng, người viết và ngày viết giữ nguyên vì thuộc về bình luận gốc.
 export default function CommentFormModal({
   comment,
   roomName,
@@ -35,18 +36,22 @@ export default function CommentFormModal({
     formState: { errors, isSubmitting },
   } = useForm<AdminCommentFormValues>({
     resolver: zodResolver(adminCommentSchema),
+    // Đổ nội dung và số sao hiện tại vào form để quản trị sửa trực tiếp.
     defaultValues: {
       noiDung: comment.noiDung,
       saoBinhLuan: comment.saoBinhLuan,
     },
   });
 
+  // Chạy khi bấm Lưu và các ô đã hợp lệ.
   const onSubmit = async (values: AdminCommentFormValues) => {
     if (!accessToken) {
       return;
     }
 
     try {
+      // Gửi kèm mã phòng, mã người bình luận và ngày bình luận cũ,
+      // vì API cập nhật nhận cả object chứ không nhận riêng phần sửa.
       await updateComment(
         comment.id,
         {

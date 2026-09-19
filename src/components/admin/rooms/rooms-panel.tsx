@@ -19,17 +19,24 @@ interface RoomsPanelProps {
   locations: Location[];
 }
 
-// Phần tương tác của trang Phòng thuê: bảng dữ liệu + thêm/sửa/xóa.
+// Phần tương tác của trang Phòng thuê: vẽ bảng và xử lý thêm, sửa, xóa.
+// Nhận thêm danh sách vị trí để hiện tên vị trí trong bảng và cho form chọn.
 export default function RoomsPanel({ rooms, locations }: RoomsPanelProps) {
+  // Dùng để bảo Next.js tải lại dữ liệu của trang sau khi thêm, sửa hoặc xóa xong.
   const router = useRouter();
+
+  // Token của người đang đăng nhập. Các thao tác ghi dữ liệu đều phải kèm token này.
   const accessToken = useAuthStore((s) => s.accessToken);
 
+  // editingRoom để trống nghĩa là đang thêm mới, có dữ liệu nghĩa là đang sửa.
   const [formOpen, setFormOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<Room | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Mỗi phòng chỉ lưu mã vị trí. Dựng bảng tra cứu từ mã sang tên vị trí
+  // để bảng hiện tên cho người đọc thay vì hiện con số.
   const locationNameByCode = new Map(locations.map((loc) => [loc.id, loc.tenViTri]));
 
   function openCreateForm() {
@@ -48,20 +55,26 @@ export default function RoomsPanel({ rooms, locations }: RoomsPanelProps) {
     router.refresh();
   }
 
+  // Chạy khi người dùng bấm Xóa trong hộp xác nhận.
   async function handleConfirmDelete() {
+    // Không có dòng nào đang chọn, hoặc không có token đăng nhập thì bỏ qua.
     if (!deleteTarget || !accessToken) {
       return;
     }
 
+    // Bật cờ đang xóa để nút chuyển sang chữ "Đang xử lý" và không bấm được hai lần.
     setIsDeleting(true);
     try {
       await deleteRoom(deleteTarget.id, buildAuthHeaders(accessToken));
+      // Xóa xong thì báo một câu, đóng hộp xác nhận, rồi bảo trang tải lại danh sách.
       showToast('success', 'Đã xóa phòng.');
       setDeleteTarget(null);
       router.refresh();
     } catch (error) {
+      // Xóa hỏng thì hiện câu thông báo lấy từ lỗi server trả về.
       showToast('error', normalizeApiError(error).message);
     } finally {
+      // Chạy dù thành công hay thất bại, để nút không kẹt ở trạng thái đang xử lý.
       setIsDeleting(false);
     }
   }
