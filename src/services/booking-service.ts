@@ -10,12 +10,8 @@ import type {
   UpdateBookingPayload,
 } from "@/types";
 
-// Các lời gọi API về đặt phòng, cộng thêm phần tự kiểm tra trùng lịch ở cuối file.
-
 const RESOURCE = "/dat-phong";
 
-// Lấy toàn bộ lượt đặt. API không có phân trang nên trang quản lý Đặt phòng
-// tải hết rồi tự lọc và tự cắt trang.
 export async function getBookings(): Promise<
   Booking[]
 > {
@@ -102,14 +98,16 @@ export async function deleteBooking(
   );
 }
 
-// Kiểm tra hai khoảng thời gian có đè lên nhau không.
-// Quy tắc: đè nhau khi ngày nhận mới sớm hơn ngày trả cũ, và ngày trả mới
-// muộn hơn ngày nhận cũ. Cả hai phải cùng đúng.
-//
-// Ví dụ phòng đã có người đặt từ 10 tới 15.
-//   Đặt 12 tới 14: đè nhau, vì 12 sớm hơn 15 và 14 muộn hơn 10.
-//   Đặt 15 tới 18: không đè, vì 15 không sớm hơn 15. Ai trả phòng hôm nào thì
-//   hôm đó người khác nhận được luôn.
+// Cắt lấy phần ngày, bỏ phần giờ.
+// Ngày từ ô chọn có dạng 2026-09-20, còn ngày từ API có kèm giờ.
+// Hai dạng đó được JavaScript hiểu theo hai mốc giờ khác nhau, lệch 7 tiếng
+// ở Việt Nam, nên phải đưa về cùng một dạng rồi mới so.
+function toDayStamp(value: string): number {
+  return new Date(
+    `${value.slice(0, 10)}T00:00:00.000Z`,
+  ).getTime();
+}
+
 function rangesOverlap(
   newCheckIn: string,
   newCheckOut: string,
@@ -117,19 +115,17 @@ function rangesOverlap(
   existingCheckOut: string,
 ): boolean {
   const newIn =
-    new Date(newCheckIn).getTime();
+    toDayStamp(newCheckIn);
 
   const newOut =
-    new Date(newCheckOut).getTime();
+    toDayStamp(newCheckOut);
 
   const existingIn =
-    new Date(existingCheckIn).getTime();
+    toDayStamp(existingCheckIn);
 
   const existingOut =
-    new Date(existingCheckOut).getTime();
+    toDayStamp(existingCheckOut);
 
-  // Ngày không đọc được, hoặc ngày trả không sau ngày nhận, thì coi như không đè,
-  // vì dữ liệu đó vốn đã sai, không dùng để chặn người khác đặt phòng.
   if (
     Number.isNaN(newIn) ||
     Number.isNaN(newOut) ||
@@ -147,8 +143,33 @@ function rangesOverlap(
   );
 }
 
-// Trả về danh sách mã phòng đã kín trong khoảng ngày đang tìm,
-// để trang tìm phòng loại chúng ra khỏi kết quả.
+// Lấy các khoảng ngày đã có người đặt của một phòng, sắp theo thứ tự thời gian.
+// Trang chi tiết dùng danh sách này để báo trước cho người dùng biết ngày nào đã kín.
+export async function getBookedRangesByRoom(
+  maPhong: number,
+): Promise<{ from: string; to: string }[]> {
+  const bookings = await getBookings();
+
+  return bookings
+    .filter(
+      (booking) =>
+        booking.maPhong === maPhong,
+    )
+    .map((booking) => ({
+      from: booking.ngayDen.slice(0, 10),
+      to: booking.ngayDi.slice(0, 10),
+    }))
+    .filter(
+      (range) =>
+        range.from &&
+        range.to &&
+        range.to > range.from,
+    )
+    .sort((first, second) =>
+      first.from.localeCompare(second.from),
+    );
+}
+
 export async function getUnavailableRoomIds(
   checkIn: string,
   checkOut: string,
@@ -176,10 +197,6 @@ export async function getUnavailableRoomIds(
   return unavailableRoomIds;
 }
 
-// Kiểm tra một phòng cụ thể đã có ai đặt trùng ngày chưa.
-// Lấy toàn bộ lượt đặt, giữ lại những lượt của đúng phòng đó, rồi so ngày.
-// excludeBookingId dùng khi đang sửa một lượt đặt: bỏ qua chính nó,
-// nếu không thì lượt đặt đó tự báo trùng với chính mình.
 export async function hasRoomBookingConflict(
   maPhong: number,
   newCheckIn: string,
