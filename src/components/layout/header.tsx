@@ -556,6 +556,25 @@ export default function Header() {
 
                     <div className="my-1 h-px bg-border" />
 
+                    {/* Tài khoản quản trị đang xem web với tư cách người dùng thì
+                        có lối quay lại khu quản trị ngay tại đây, khỏi gõ địa chỉ tay */}
+                    {user.role === "ADMIN" && (
+                      <>
+                        <Link
+                          href="/admin"
+                          role="menuitem"
+                          onClick={() =>
+                            setMenuOpen(false)
+                          }
+                          className="block w-full px-4 py-2 text-left font-semibold text-brand transition hover:bg-surface"
+                        >
+                          Chuyển sang khu quản trị
+                        </Link>
+
+                        <div className="my-1 h-px bg-border" />
+                      </>
+                    )}
+
                     <Link
                       href="/profile"
                       role="menuitem"

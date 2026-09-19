@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { showToast } from '@/components/common/toast';
@@ -25,6 +26,14 @@ export default function AdminTopbar() {
         <span className="hidden text-sm text-secondary sm:inline">
           {user?.name}
         </span>
+
+        {/* Lối quay lại giao diện người dùng mà vẫn giữ nguyên phiên đăng nhập */}
+        <Link
+          href="/"
+          className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-foreground transition hover:bg-surface"
+        >
+          Về trang người dùng
+        </Link>
 
         <button
           type="button"
