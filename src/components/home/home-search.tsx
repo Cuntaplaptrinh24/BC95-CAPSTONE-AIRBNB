@@ -27,6 +27,10 @@ interface HomeSearchProps {
   locations: Location[];
 }
 
+// Ô tìm kiếm lớn ở trang chủ: chọn nơi đến, ngày nhận, ngày trả, số khách.
+// Bấm tìm thì không gọi API, mà chuyển sang trang /rooms kèm điều kiện trên địa chỉ.
+
+// Ngày hôm nay theo giờ máy người dùng, dùng làm giới hạn nhỏ nhất cho ô chọn ngày.
 function todayISO(): string {
   const date = new Date();
 
@@ -43,6 +47,7 @@ function todayISO(): string {
     .slice(0, 10);
 }
 
+// Số khách phải là số nguyên từ 1 trở lên. Người dùng có thể gõ chữ hoặc số âm.
 function isValidGuestsInput(
   value: string,
 ): boolean {
@@ -94,6 +99,7 @@ export default function HomeSearch({
 
   const today = todayISO();
 
+  // Gợi ý tối đa 8 địa điểm trong danh sách xổ xuống.
   const locationOptions =
     useMemo(
       () =>
@@ -101,6 +107,9 @@ export default function HomeSearch({
       [locations],
     );
 
+  // Đối chiếu chữ người dùng gõ với danh sách vị trí, bỏ qua dấu và chữ hoa thường.
+  // Khớp đúng một vị trí thì lát nữa tìm theo mã vị trí cho chính xác,
+  // không khớp thì coi như tìm theo từ khóa.
   const matchedLocation =
     useMemo(() => {
       const input =
@@ -125,6 +134,7 @@ export default function HomeSearch({
       locations,
     ]);
 
+  // Đổi ngày nhận mà ngày trả đang sớm hơn thì xóa ngày trả, buộc chọn lại.
   const handleCheckInChange = (
     value: string,
   ) => {
@@ -139,10 +149,12 @@ export default function HomeSearch({
     }
   };
 
+  // Bấm nút Tìm: kiểm tra dữ liệu nhập, rồi ghép địa chỉ và chuyển trang.
   const handleSubmit = (
     event:
       FormEvent<HTMLFormElement>,
   ) => {
+    // Chặn hành vi mặc định của trình duyệt là tải lại cả trang khi gửi form.
     event.preventDefault();
 
     if (

@@ -1,10 +1,13 @@
-﻿import type { Room } from "@/types/room";
+﻿// Danh sách tiện nghi của phòng, dùng ở trang chi tiết phòng.
+
+import type { Room } from "@/types/room";
 
 interface AmenityItem {
   label: string;
   field: keyof Room;
 }
 
+// Ghép nhãn tiếng Việt với đúng tên trường trong dữ liệu phòng.
 const AMENITY_LIST: AmenityItem[] = [
   { label: "Máy giặt", field: "mayGiat" },
   { label: "Bàn là", field: "banLa" },
@@ -17,10 +20,12 @@ const AMENITY_LIST: AmenityItem[] = [
   { label: "Bàn ủi", field: "banUi" },
 ];
 
+// Lọc ra những tiện nghi mà phòng này có, để trang chi tiết chỉ hiện những cái đó.
 export function getActiveAmenities(room: Room): AmenityItem[] {
   return AMENITY_LIST.filter((a) => room[a.field]);
 }
 
+// Dấu tích vẽ bằng SVG đặt trước mỗi tiện nghi.
 export default function AmenityIcon({ className = "" }: { className?: string }) {
   return (
     <svg

@@ -1,4 +1,6 @@
-﻿import Link from "next/link";
+﻿// Khối điểm đến ở trang chủ: hiện tối đa 8 vị trí, kèm nút xem tất cả.
+
+import Link from "next/link";
 
 import type {
   Location,
@@ -15,6 +17,7 @@ interface LocationSectionProps {
 export default function LocationSection({
   locations,
 }: LocationSectionProps) {
+  // Chỉ lấy 8 vị trí đầu cho trang chủ gọn, muốn xem hết thì sang trang riêng.
   const featured =
     locations.slice(0, 8);
 

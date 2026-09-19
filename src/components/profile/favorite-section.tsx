@@ -1,5 +1,9 @@
 "use client";
 
+// Khối Yêu thích trong trang hồ sơ. Đọc danh sách từ bộ nhớ trình duyệt,
+// cùng nguồn với nút trái tim ở thẻ phòng, nên bỏ tim ở đâu thì danh sách
+// ở đây cũng cập nhật theo.
+
 import {
   useMemo,
   useSyncExternalStore,

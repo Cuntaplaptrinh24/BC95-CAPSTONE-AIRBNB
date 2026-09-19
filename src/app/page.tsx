@@ -1,4 +1,8 @@
-﻿import type {
+﻿// Trang chủ. Chạy ở máy chủ: gọi API lấy danh sách vị trí rồi mới gửi trang về.
+// Các khối bên dưới tự lo phần của mình, HomeSearch và RecentReviews chạy ở trình duyệt,
+// RoomGrid tự gọi API riêng của nó.
+
+import type {
   Location,
 } from "@/types/location";
 
@@ -14,10 +18,13 @@ import RecentReviews from "@/components/home/recent-reviews";
 import RoomGrid from "@/components/room/room-grid";
 import Footer from "@/components/common/footer";
 
+// Lấy dữ liệu mới mỗi lần mở trang, không dùng bản đã dựng sẵn.
 export const dynamic =
   "force-dynamic";
 
 export default async function Home() {
+  // Gọi API trong try để nếu hỏng thì vẫn vẽ được trang, chỉ phần vị trí báo lỗi,
+  // chứ không làm cả trang chủ trắng.
   let locations: Location[] = [];
   let locationError = false;
 

@@ -1,4 +1,7 @@
-﻿import Link from "next/link";
+﻿// Thẻ một điểm đến ở trang chủ. Bấm vào là sang trang danh sách phòng
+// đã lọc sẵn theo vị trí đó.
+
+import Link from "next/link";
 import type { Location } from "@/types/location";
 import SafeImage from "@/components/common/safe-image";
 

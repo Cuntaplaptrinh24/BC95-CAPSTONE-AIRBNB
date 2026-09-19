@@ -24,6 +24,9 @@ export default function LocationMap({
     return null;
   }
 
+  // Nhúng bản đồ Google bằng cách ghép địa chỉ vào đường dẫn dạng embed.
+  // Cách này không cần khóa API, đổi lại chỉ hiện được khu vực gần đúng theo tên,
+  // vì dữ liệu phòng không có tọa độ.
   const mapSource =
     `https://www.google.com/maps?q=${encodeURIComponent(
       address,

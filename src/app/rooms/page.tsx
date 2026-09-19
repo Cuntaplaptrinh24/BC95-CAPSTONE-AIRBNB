@@ -1,3 +1,9 @@
+// Trang danh sách phòng, dùng cho cả hai kiểu xem: theo một vị trí cụ thể,
+// và theo từ khóa tìm kiếm. Trang chạy ở máy chủ.
+//
+// Mọi điều kiện lọc nằm trên địa chỉ trang (vị trí, từ khóa, ngày, số khách, trang),
+// nên chia sẻ link là người khác thấy đúng kết quả đó.
+
 import EmptyState from "@/components/common/empty-state";
 import Pagination from "@/components/common/pagination";
 import RoomCard from "@/components/room/room-card";
@@ -21,6 +27,7 @@ import {
   type RoomsQueryParams,
 } from "./query";
 
+// Luôn dựng lại trang khi mở, vì phòng trống thay đổi theo ngày người dùng chọn.
 export const dynamic = "force-dynamic";
 
 interface RoomsPageProps {
@@ -35,6 +42,7 @@ interface RoomsPageProps {
 export default async function RoomsPage({
   searchParams,
 }: RoomsPageProps) {
+  // Đọc và làm sạch tham số trên địa chỉ. Toàn bộ việc kiểm tra nằm trong query.ts.
   const raw = await searchParams;
   const params =
     parseRoomsSearchParams(raw);
@@ -48,6 +56,8 @@ export default async function RoomsPage({
     page,
   } = params;
 
+  // Hai nhánh xử lý khác nhau: có chọn vị trí thì lấy phòng theo vị trí,
+  // còn lại thì đi theo đường tìm kiếm.
   if (locationId !== null) {
     return renderByLocation({
       locationId,
@@ -67,6 +77,9 @@ export default async function RoomsPage({
   });
 }
 
+// Nhánh một: xem phòng của một vị trí.
+// Gọi cùng lúc ba việc: lấy phòng theo vị trí, lấy tên vị trí để làm tiêu đề,
+// và lấy danh sách phòng đã kín trong khoảng ngày đang chọn.
 async function renderByLocation(args: {
   locationId: number;
   checkIn: string;
@@ -95,6 +108,7 @@ async function renderByLocation(args: {
     ),
   ]);
 
+  // Bỏ phòng nhỏ hơn số khách cần, và bỏ phòng đã có người đặt trùng ngày.
   const filtered: Room[] =
     rooms.filter(
       (room) =>
@@ -125,6 +139,7 @@ async function renderByLocation(args: {
   );
 }
 
+// Nhánh hai: tìm kiếm. Nhánh này có hai cách chạy tùy điều kiện, xem chú thích bên trong.
 async function renderBySearch(args: {
   keyword: string;
   checkIn: string;
@@ -145,9 +160,9 @@ async function renderBySearch(args: {
   );
 
   /*
-   * Khi không lọc ngày và chỉ có một khách,
-   * sử dụng phân trang từ backend để tránh
-   * tải toàn bộ danh sách phòng.
+   * Cách chạy thứ nhất, nhẹ hơn: không chọn ngày và chỉ một khách.
+   * Khi đó mọi việc lọc đều làm được bằng API phân trang, nên chỉ tải đúng
+   * 12 phòng của trang đang xem thay vì tải cả kho phòng về.
    */
   if (
     guests <= 1 &&
@@ -171,6 +186,8 @@ async function renderBySearch(args: {
       ),
     );
 
+    // Người dùng gõ tay số trang lớn hơn số trang thật, ví dụ ?page=99,
+    // thì kéo về trang cuối và gọi lại, để không hiện danh sách rỗng.
     if (
       response.totalRow > 0 &&
       currentPage > totalPages
@@ -211,9 +228,9 @@ async function renderBySearch(args: {
   }
 
   /*
-   * Khi có ngày hoặc số khách lớn hơn một,
-   * lấy danh sách đầy đủ để lọc chính xác
-   * trước khi phân trang.
+   * Cách chạy thứ hai, nặng hơn: có chọn ngày hoặc cần nhiều hơn một khách.
+   * API không lọc được theo sức chứa và theo lịch trống, nên phải tải hết
+   * danh sách phòng về, tự lọc rồi tự cắt trang. Chậm hơn nhưng kết quả mới đúng.
    */
   const [
     allRooms,
@@ -235,6 +252,9 @@ async function renderBySearch(args: {
         ),
     );
 
+  // Lọc theo từ khóa trên tên phòng và mô tả.
+  // normalizeText bỏ dấu tiếng Việt và chuyển thành chữ thường, nên gõ "da nang"
+  // vẫn tìm ra "Đà Nẵng".
   if (keyword) {
     const needle =
       normalizeText(keyword);
@@ -272,6 +292,8 @@ async function renderBySearch(args: {
   );
 }
 
+// Chỉ hỏi phòng nào đã kín khi người dùng có chọn đủ cả ngày nhận và ngày trả.
+// Không chọn ngày thì trả về danh sách rỗng, tức không loại phòng nào.
 async function loadUnavailableRoomIds(
   checkIn: string,
   checkOut: string,
@@ -286,6 +308,8 @@ async function loadUnavailableRoomIds(
   );
 }
 
+// Phần vẽ giao diện, dùng chung cho cả hai nhánh ở trên:
+// tiêu đề, dòng tóm tắt điều kiện lọc, tổng số chỗ ở, lưới phòng và thanh phân trang.
 function renderRooms(
   result: ReturnType<
     typeof paginateRooms
@@ -354,6 +378,7 @@ function renderRooms(
   );
 }
 
+// Ghép dòng tóm tắt điều kiện đang lọc, ví dụ: Từ khóa: biển · 2026-10-01 → 2026-10-05 · 2 khách
 function buildSummary(
   query: RoomsQueryParams,
 ): string {

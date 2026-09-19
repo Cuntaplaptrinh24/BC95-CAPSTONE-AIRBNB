@@ -1,5 +1,8 @@
 "use client";
 
+// Thẻ một chuyến đi trong trang hồ sơ: thông tin phòng, ngày, số khách,
+// kèm sửa và hủy chuyến đi.
+
 import { useState } from "react";
 import Link from "next/link";
 
@@ -38,6 +41,7 @@ interface BookingHistoryCardProps {
   ) => void;
 }
 
+// Cắt phần giờ khỏi chuỗi ngày để đưa vào ô chọn ngày của trình duyệt.
 function toDateInput(
   value: string,
 ): string {
@@ -47,12 +51,14 @@ function toDateInput(
   return match?.[0] ?? "";
 }
 
+// Thêm lại phần giờ khi gửi lên API.
 function toApiDate(
   value: string,
 ): string {
   return `${value}T00:00:00.000Z`;
 }
 
+// Ngày hôm nay theo giờ máy, dùng làm giới hạn nhỏ nhất khi chọn ngày mới.
 function todayISO(): string {
   const now = new Date();
 
@@ -67,6 +73,7 @@ function todayISO(): string {
     .slice(0, 10);
 }
 
+// Đổi ngày sang dạng quen mắt của người Việt để hiện lên thẻ.
 function formatDate(
   value: string,
 ): string {

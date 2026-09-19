@@ -1,4 +1,7 @@
-﻿interface EmptyStateProps {
+﻿// Khung chữ hiện khi danh sách không có dữ liệu, dùng chung cho nhiều màn hình.
+// description có dấu hỏi nghĩa là muốn truyền thì truyền, không thì thôi.
+
+interface EmptyStateProps {
   title: string;
   description?: string;
 }

@@ -1,4 +1,7 @@
-﻿import Link from "next/link";
+﻿// Thẻ một phòng: ảnh, tên, sức chứa, giá, kèm nút yêu thích.
+// Dùng ở trang chủ và trang danh sách phòng.
+
+import Link from "next/link";
 import type { Room } from "@/types/room";
 import SafeImage from "@/components/common/safe-image";
 import FavoriteButton from "./favorite-button";
@@ -18,6 +21,8 @@ function formatUsd(price: number): string {
   return `$${price.toLocaleString("en-US")} / đêm`;
 }
 
+// Ghép địa chỉ sang trang chi tiết, mang theo ngày và số khách đang tìm.
+// Nhờ vậy vào chi tiết phòng thì form đặt phòng đã điền sẵn đúng ngày người dùng chọn.
 function buildHref(
   roomId: number,
   query?: RoomCardQuery,
@@ -77,6 +82,8 @@ export default function RoomCard({
           )}
         </Link>
 
+        {/* Nút yêu thích đặt đè lên góc ảnh, nằm ngoài thẻ Link để bấm vào
+            không bị chuyển sang trang chi tiết */}
         <FavoriteButton room={room} />
       </div>
 

@@ -17,6 +17,10 @@ import {
   AUTH_MODAL_OPEN_EVENT,
 } from "@/lib/auth-events";
 
+// Thanh đầu trang, có mặt ở mọi trang phía người dùng.
+// Gồm ô tìm kiếm nhanh, menu tài khoản, và chứa luôn cửa sổ đăng nhập.
+
+// Ngày hôm nay theo giờ máy, dùng làm giới hạn nhỏ nhất cho ô chọn ngày.
 function todayISO(): string {
   const date = new Date();
   const offset = date.getTimezoneOffset();
@@ -31,6 +35,7 @@ function todayISO(): string {
     .slice(0, 10);
 }
 
+// Ô tìm kiếm ở đây chỉ cho chọn một ngày cho gọn, nên ngày trả lấy là ngày kế tiếp.
 function nextDayISO(
   value: string,
 ): string {
@@ -100,6 +105,8 @@ export default function Header() {
   const menuRef =
     useRef<HTMLDivElement>(null);
 
+  // Bấm tìm: ghép điều kiện thành địa chỉ rồi chuyển sang trang danh sách phòng.
+  // Số khách bằng 1 thì bỏ qua cho địa chỉ gọn, vì đó là giá trị mặc định.
   const handleSearch = (
     event: FormEvent<HTMLFormElement>,
   ) => {
@@ -146,6 +153,9 @@ export default function Header() {
 
   const pathname = usePathname();
 
+  // Lắng nghe tín hiệu mở cửa sổ đăng nhập do nơi khác phát ra, ví dụ khi người
+  // chưa đăng nhập bấm đặt phòng hoặc bấm gửi bình luận. Cửa sổ đăng nhập nằm ở
+  // Header nên chỉ Header mở được, các nơi kia chỉ phát tín hiệu.
   useEffect(() => {
     const openAuth = () => {
       setMenuOpen(false);
@@ -166,6 +176,8 @@ export default function Header() {
     };
   }, []);
 
+  // Khi menu tài khoản đang mở: bấm ra ngoài hoặc bấm Esc thì đóng.
+  // Chỉ đăng ký lắng nghe trong lúc menu mở, đóng rồi thì gỡ đi.
   useEffect(() => {
     if (!menuOpen) {
       return;

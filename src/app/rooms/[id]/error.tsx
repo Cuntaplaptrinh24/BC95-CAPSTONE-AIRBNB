@@ -1,5 +1,6 @@
 ﻿"use client";
 
+// Màn hình lỗi riêng cho trang chi tiết phòng, ví dụ khi API chết giữa chừng.
 export default function RoomDetailError({
   unstable_retry,
 }: {

@@ -21,6 +21,10 @@ import type { User } from "@/types/user";
 import type { Booking } from "@/types/booking";
 import type { Room } from "@/types/room";
 
+// Toàn bộ nội dung trang hồ sơ: thông tin cá nhân, danh sách chuyến đi, và khối yêu thích.
+// Chạy trong trình duyệt vì cần biết ai đang đăng nhập.
+
+// Bốn trạng thái của một chuyến đi, tính từ ngày nhận và ngày trả so với hôm nay.
 const STATUS_UPCOMING = "Sắp tới";
 const STATUS_ONGOING = "Đang ở";
 const STATUS_COMPLETED = "Đã hoàn thành";
@@ -48,6 +52,9 @@ const TEXT = {
   unknown: "Không xác định",
 };
 
+// Đổi chuỗi ngày từ API thành đối tượng ngày theo giờ máy người dùng.
+// Không dùng thẳng new Date vì chuỗi có phần giờ quốc tế, để nguyên thì
+// một chuyến đi bắt đầu hôm nay có thể bị tính thành hôm qua.
 function parseLocalDate(
   iso: string,
 ): Date | null {
@@ -111,6 +118,9 @@ function formatBirthday(
   });
 }
 
+// Xác định chuyến đi đang ở trạng thái nào: chưa tới, đang ở, hay đã xong.
+// So sánh theo mốc 0 giờ hôm nay, để trong ngày nhận phòng vẫn tính là đang ở.
+// Ngày hỏng hoặc ngày trả không sau ngày nhận thì trả về không xác định.
 function getTripStatus(
   booking: Booking,
 ): string {
@@ -153,6 +163,7 @@ function getTripStatus(
   return STATUS_COMPLETED;
 }
 
+// Thứ tự ưu tiên khi sắp xếp: sắp tới lên đầu, rồi đang ở, rồi đã hoàn thành.
 const STATUS_ORDER: string[] = [
   STATUS_UPCOMING,
   STATUS_ONGOING,
@@ -176,6 +187,8 @@ interface EnrichedBooking {
   status: string;
 }
 
+// Sắp xếp danh sách chuyến đi theo trạng thái trước, trong cùng trạng thái thì
+// theo ngày. Sắp trên bản sao để không sửa vào danh sách gốc.
 function sortEnrichedBookings(
   bookings: EnrichedBooking[],
 ): EnrichedBooking[] {
@@ -285,6 +298,9 @@ export default function ProfileContent() {
     setBookingError,
   ] = useState("");
 
+  // Tải dữ liệu khi đã biết chắc người dùng đang đăng nhập.
+  // Biến cancelled xử lý trường hợp người dùng rời trang khi API chưa trả lời:
+  // lúc đó bỏ qua kết quả, không gọi setState trên component đã bị gỡ.
   useEffect(() => {
     if (
       !hasHydrated ||
@@ -481,6 +497,8 @@ export default function ProfileContent() {
     ui.avatar?.trim() ||
     "/placeholder-avatar.svg";
 
+  // Form sửa hồ sơ báo về đã lưu xong: cập nhật lại thông tin đang hiện
+  // và cập nhật luôn kho đăng nhập, để tên trên Header đổi theo.
   const handleUserUpdated = (
     updatedUser: User,
   ) => {
@@ -524,6 +542,8 @@ export default function ProfileContent() {
     },
   ];
 
+  // Sửa xong một chuyến đi thì thay dòng đó trong danh sách rồi sắp xếp lại,
+  // vì đổi ngày có thể làm chuyến đi chuyển sang trạng thái khác.
   const handleBookingUpdated = (
     updatedBooking: Booking,
   ) => {
@@ -546,6 +566,7 @@ export default function ProfileContent() {
     );
   };
 
+  // Xóa xong thì bỏ dòng đó khỏi danh sách đang hiện, khỏi gọi lại API.
   const handleBookingDeleted = (
     bookingId: number,
   ) => {

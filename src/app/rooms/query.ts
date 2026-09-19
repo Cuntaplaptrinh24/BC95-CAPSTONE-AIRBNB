@@ -1,5 +1,12 @@
-﻿import type { Room } from "@/types/room";
+﻿// Đọc và làm sạch các tham số tìm kiếm trên địa chỉ trang danh sách phòng.
+//
+// Người dùng có thể sửa tay địa chỉ, ví dụ ?page=-5&checkOut=2026-02-31,
+// nên mọi giá trị ở đây đều phải kiểm tra trước khi dùng. Nguyên tắc chung:
+// giá trị sai thì thay bằng giá trị mặc định, không để trang vỡ.
 
+import type { Room } from "@/types/room";
+
+// Mỗi trang 12 phòng.
 export const PAGE_SIZE = 12;
 
 export interface RoomsSearchParams {
@@ -11,6 +18,8 @@ export interface RoomsSearchParams {
   page: number;
 }
 
+// Một tham số có thể xuất hiện nhiều lần trên địa chỉ, ví dụ ?page=1&page=2,
+// khi đó nó về dạng danh sách. Hàm này luôn lấy giá trị đầu tiên.
 function asSingle(value: string | string[] | undefined): string | undefined {
   if (value === undefined) return undefined;
   if (Array.isArray(value)) return value[0];
@@ -41,6 +50,7 @@ function isValidCalendarDate(s: string): boolean {
   );
 }
 
+// Gom toàn bộ việc đọc tham số vào một chỗ, trả về bộ giá trị đã chắc chắn hợp lệ.
 export function parseRoomsSearchParams(
   raw: Record<string, string | string[] | undefined>,
 ): RoomsSearchParams {
@@ -48,6 +58,8 @@ export function parseRoomsSearchParams(
   const locationId = parsePositiveInt(locationIdRaw ?? undefined, 0);
   const validLocationId = locationId >= 1 ? locationId : null;
 
+  // Đã chọn vị trí thì bỏ từ khóa, vì hai kiểu lọc này chạy theo hai nhánh khác nhau,
+  // để cả hai cùng lúc thì kết quả mâu thuẫn.
   const rawKeyword = (asSingle(raw.keyword) ?? "").trim();
   // Khi có locationId hợp lệ, bỏ keyword để tránh hai chế độ lọc mâu thuẫn
   const keyword = validLocationId !== null ? "" : rawKeyword;
@@ -57,10 +69,12 @@ export function parseRoomsSearchParams(
 
   if (checkIn && !isValidCalendarDate(checkIn)) checkIn = "";
   if (checkOut && !isValidCalendarDate(checkOut)) checkOut = "";
+  // Chỉ có một đầu ngày thì bỏ cả cặp, vì lọc lịch trống cần đủ hai mốc.
   if ((checkIn && !checkOut) || (!checkIn && checkOut)) {
     checkIn = "";
     checkOut = "";
   }
+  // Ngày trả không sau ngày nhận thì cũng bỏ cả cặp.
   if (checkIn && checkOut && checkOut <= checkIn) {
     checkIn = "";
     checkOut = "";
@@ -72,6 +86,8 @@ export function parseRoomsSearchParams(
   return { locationId: validLocationId, keyword, checkIn, checkOut, guests, page };
 }
 
+// Bỏ dấu tiếng Việt và chuyển thành chữ thường, để gõ "da nang" vẫn tìm ra "Đà Nẵng".
+// Cách làm: tách chữ và dấu thành hai ký tự riêng rồi xóa phần dấu đi.
 export function normalizeText(text: string): string {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
@@ -92,6 +108,9 @@ export interface PaginatedRooms {
   totalPages: number;
 }
 
+// Tự cắt một danh sách dài thành từng trang, dùng cho những trường hợp
+// phải tải hết dữ liệu về rồi mới lọc được.
+// Trang vượt quá tổng số trang thì kéo về trang cuối, nhỏ hơn 1 thì kéo về trang 1.
 export function paginateRooms(
   list: Room[],
   requestedPage: number,

@@ -1,4 +1,6 @@
-﻿export default function RoomsLoading() {
+﻿// Màn hình chờ của trang danh sách phòng, hiện trong lúc đang gọi API.
+
+export default function RoomsLoading() {
   return (
     <div className="container-airbnb py-8 sm:py-10">
       <div className="h-7 w-2/3 animate-pulse rounded bg-skeleton" />

@@ -1,5 +1,10 @@
 ﻿"use client";
 
+// Khối bình luận ở trang chi tiết phòng: xem danh sách, viết mới,
+// và sửa hoặc xóa bình luận của chính mình.
+// Danh sách ban đầu do trang cha lấy sẵn ở máy chủ, sau mỗi thao tác thì gọi
+// lại API để lấy bản mới.
+
 import { useState } from "react";
 import type { Comment } from "@/types/comment";
 import { useAuthStore } from "@/store/auth-store";
@@ -61,9 +66,11 @@ export default function CommentSection({
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
 
+  // Chỉ chủ bình luận mới thấy nút Sửa và Xóa của bình luận đó.
   const isOwnComment = (comment: Comment) =>
     !!user && comment.maNguoiBinhLuan === user.id;
 
+  // Gọi lại API lấy danh sách bình luận mới nhất của phòng này.
   const refresh = async () => {
     try {
       const fresh = await getCommentsByRoom(roomId);
@@ -74,6 +81,8 @@ export default function CommentSection({
     }
   };
 
+  // Kiểm tra đã đăng nhập chưa. Chưa thì báo và mở cửa sổ đăng nhập,
+  // trả về false để chỗ gọi dừng lại.
   const requireAuth = (): boolean => {
     if (!hasHydrated || !isAuthenticated || !user || !accessToken) {
       showToast("error", "Vui lòng đăng nhập để bình luận.");
@@ -83,6 +92,7 @@ export default function CommentSection({
     return true;
   };
 
+  // Gửi bình luận mới: kiểm tra nội dung và số sao trước, rồi mới gọi API.
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
@@ -123,6 +133,7 @@ export default function CommentSection({
     }
   };
 
+  // Mở chế độ sửa cho một bình luận: chép nội dung và số sao hiện tại vào ô nhập.
   const startEdit = (comment: EditableComment) => {
     setEditingId(comment.id);
     setEditContent(comment.noiDung);
@@ -130,6 +141,8 @@ export default function CommentSection({
     setFormError("");
   };
 
+  // Lưu bình luận đã sửa. busyId giữ mã bình luận đang xử lý, để khóa nút của
+  // đúng dòng đó và tránh bấm hai lần.
   const handleUpdate = async (comment: EditableComment) => {
     if (busyId !== null) return;
     const trimmed = editContent.trim();
@@ -169,6 +182,8 @@ export default function CommentSection({
     }
   };
 
+  // Xóa bình luận. Trước đó người dùng phải bấm xác nhận, trạng thái chờ xác nhận
+  // giữ trong confirmDeleteId.
   const handleDelete = async (comment: EditableComment) => {
     if (busyId !== null || !user || !accessToken) return;
     setBusyId(comment.id);

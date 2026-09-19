@@ -1,4 +1,6 @@
-﻿interface SectionHeaderProps {
+﻿// Tiêu đề của một khối nội dung trong trang, gồm dòng lớn và dòng phụ.
+
+interface SectionHeaderProps {
   title: string;
   subtitle?: string;
 }

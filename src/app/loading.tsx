@@ -1,4 +1,9 @@
-﻿export default function HomeLoading() {
+﻿// Màn hình chờ của trang chủ.
+// Next.js tự hiện file này trong lúc trang chủ còn đang gọi API, rồi thay bằng
+// nội dung thật khi xong. Các khối xám nhấp nháy mô phỏng bố cục sắp hiện ra,
+// cách này đỡ giật mắt hơn là để trang trắng rồi nội dung nhảy vào.
+
+export default function HomeLoading() {
   return (
     <div className="flex flex-col gap-6 py-8 sm:py-10">
       <div className="container-airbnb flex flex-col gap-4">

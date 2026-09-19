@@ -1,3 +1,6 @@
+// Trang xem tất cả địa điểm, có tìm kiếm và phân trang. Chạy ở máy chủ.
+// Trang chủ chỉ hiện 8 vị trí, còn đây là danh sách đầy đủ.
+
 import Link from "next/link";
 
 import DataErrorState from "@/components/common/data-error-state";
@@ -8,9 +11,11 @@ import {
   getLocationsPaged,
 } from "@/services/location-service";
 
+// Lấy dữ liệu mới mỗi lần mở trang.
 export const dynamic =
   "force-dynamic";
 
+// Mỗi trang 12 địa điểm.
 const PAGE_SIZE = 12;
 
 interface LocationsPageProps {
@@ -22,6 +27,8 @@ interface LocationsPageProps {
   >;
 }
 
+// Một tham số trên địa chỉ có thể xuất hiện nhiều lần, khi đó nó về dạng danh sách.
+// Hàm này luôn lấy giá trị đầu tiên.
 function asSingle(
   value:
     | string
@@ -35,6 +42,7 @@ function asSingle(
   return value;
 }
 
+// Số trang lấy từ địa chỉ nên phải kiểm tra: không phải số dương thì coi như trang 1.
 function parsePage(
   value: string | undefined,
 ): number {
@@ -57,6 +65,7 @@ function parsePage(
   return page;
 }
 
+// Ghép địa chỉ cho một số trang, giữ nguyên từ khóa đang tìm.
 function buildPageHref(
   page: number,
   keyword: string,
@@ -79,6 +88,7 @@ function buildPageHref(
   return `/locations?${params.toString()}`;
 }
 
+// Chỉ hiện tối đa 5 số trang quanh trang đang xem.
 function getWindowPages(
   currentPage: number,
   totalPages: number,
@@ -131,6 +141,8 @@ export default async function LocationsPage({
       asSingle(raw.page),
     );
 
+  // Gọi API trong try: hỏng thì trả về ngay một màn hình báo lỗi tử tế,
+  // thay vì để cả trang vỡ.
   let response;
 
   try {
@@ -151,6 +163,8 @@ export default async function LocationsPage({
         ),
       );
 
+    // Gõ tay số trang lớn hơn số trang thật thì kéo về trang cuối rồi gọi lại,
+    // để không hiện danh sách rỗng.
     if (
       response.totalRow > 0 &&
       currentPage >

@@ -1,4 +1,7 @@
-﻿interface DataErrorStateProps {
+﻿// Khung chữ hiện khi gọi API thất bại.
+// Hai dòng chữ có sẵn giá trị mặc định, nơi gọi chỉ truyền vào khi muốn nói khác đi.
+
+interface DataErrorStateProps {
   title?: string;
   message?: string;
 }

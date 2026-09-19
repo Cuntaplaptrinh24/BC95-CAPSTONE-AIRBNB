@@ -8,6 +8,8 @@ import { signUp } from '@/services/auth-service';
 import { normalizeApiError } from '@/lib/api-error';
 import { showToast } from '@/components/common/toast';
 
+// Form đăng ký tài khoản mới, nằm trong cùng cửa sổ với form đăng nhập.
+
 interface SignUpFormProps {
   onSwitchToSignIn: () => void;
 }
@@ -32,10 +34,15 @@ export default function SignUpForm({ onSwitchToSignIn }: SignUpFormProps) {
     },
   });
 
+  // Chạy khi bấm Đăng ký và các ô đã hợp lệ.
   const onSubmit = async (values: SignUpFormValues) => {
     try {
+      // id để 0 vì server tự sinh, role cố định là USER: người tự đăng ký
+      // không thể tự cho mình quyền quản trị.
       await signUp({ id: 0, role: 'USER', ...values });
       showToast('success', 'Đăng ký thành công. Vui lòng đăng nhập.');
+      // Đăng ký xong không tự đăng nhập luôn, mà chuyển sang form đăng nhập,
+      // vì API đăng ký không trả về token.
       onSwitchToSignIn();
     } catch (error) {
       const apiError = normalizeApiError(error);

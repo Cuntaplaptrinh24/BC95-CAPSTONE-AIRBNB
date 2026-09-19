@@ -1,4 +1,6 @@
-﻿// Thông tin người dùng
+﻿// Kiểu dữ liệu về người dùng.
+
+// Một người dùng như API trả về. avatar có dấu hỏi vì có thể không có.
 export interface User {
   id: number;
   name: string;
@@ -10,7 +12,7 @@ export interface User {
   avatar?: string | null;
 }
 
-// Cập nhật người dùng (CapNhatNguoiDung)
+// Gửi lên khi sửa người dùng. Không có mật khẩu vì API cập nhật không nhận.
 export interface UpdateUserPayload {
   id: number;
   name: string;
@@ -21,7 +23,7 @@ export interface UpdateUserPayload {
   role: string;
 }
 
-// Tạo người dùng từ trang Admin (ThongTinNguoiDung)
+// Gửi lên khi quản trị thêm người dùng mới. Khác bản cập nhật ở chỗ có mật khẩu.
 export interface CreateUserPayload {
   id: number;
   name: string;
@@ -33,6 +35,7 @@ export interface CreateUserPayload {
   role: string;
 }
 
-// Vai trò người dùng hợp lệ trong hệ thống
+// Hai vai trò hợp lệ. Khai báo ở một chỗ để form quản trị và chỗ kiểm tra quyền
+// dùng chung, tránh gõ nhầm chuỗi 'ADMIN' ở nơi này và 'Admin' ở nơi khác.
 export const USER_ROLES = ['USER', 'ADMIN'] as const;
 export type UserRole = (typeof USER_ROLES)[number];

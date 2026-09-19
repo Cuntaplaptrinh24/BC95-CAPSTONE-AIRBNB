@@ -1,4 +1,8 @@
-﻿import Link from "next/link";
+﻿// Màn hình báo không tìm thấy phòng.
+// Khác file error ở chỗ: error dành cho lỗi ngoài ý muốn, còn file này hiện khi
+// trang chi tiết gọi notFound() vì mã phòng trên địa chỉ không tồn tại.
+
+import Link from "next/link";
 
 export default function RoomNotFound() {
   return (

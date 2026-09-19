@@ -1,4 +1,7 @@
-﻿import { getRoomsPaged } from "@/services/room-service";
+﻿// Khối gợi ý phòng ở trang chủ. Chạy ở máy chủ nên tự gọi API lấy dữ liệu,
+// không cần trang cha truyền xuống.
+
+import { getRoomsPaged } from "@/services/room-service";
 import type { Room } from "@/types/room";
 import SectionHeader from "@/components/common/section-header";
 import EmptyState from "@/components/common/empty-state";
@@ -8,6 +11,7 @@ import RoomCard from "./room-card";
 export default async function RoomGrid() {
   let rooms: Room[] = [];
 
+  // Chỉ lấy 12 phòng đầu để làm gợi ý, không lấy cả danh sách.
   try {
     const page = await getRoomsPaged({ pageIndex: 1, pageSize: 12 });
     rooms = page?.data ?? [];
@@ -20,6 +24,7 @@ export default async function RoomGrid() {
     );
   }
 
+  // Ba trường hợp trả về khác nhau: gọi API hỏng, không có phòng nào, và có phòng.
   if (rooms.length === 0) {
     return (
       <section id="room-grid" className="container-airbnb py-8 sm:py-10">

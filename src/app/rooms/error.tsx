@@ -1,5 +1,8 @@
 ﻿"use client";
 
+// Màn hình lỗi của trang danh sách phòng.
+// Next.js tự hiện file này khi phần dựng trang ném lỗi, thay vì để cả web trắng.
+// Nút Thử lại gọi lại phần dựng trang mà không phải tải lại toàn bộ trang.
 export default function RoomsError({
   unstable_retry,
 }: {

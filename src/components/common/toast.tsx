@@ -2,14 +2,23 @@
 
 import { useEffect, useState } from 'react';
 
+// Ô thông báo nhỏ hiện ở góc phải trên màn hình rồi tự tắt.
+// Gọi là toast vì nó bật lên như lát bánh mì trong máy nướng.
+//
+// Cách dùng: bất kỳ chỗ nào trong dự án chỉ cần gọi showToast(...).
+// Component ToastContainer đặt một lần ở khung chung của trang sẽ nhận và vẽ ra.
+
 export interface ToastMessage {
   id: string;
   type: 'success' | 'error';
   message: string;
 }
 
+// Danh sách những chỗ đang chờ nghe thông báo. Thực tế chỉ có một, là ToastContainer.
 let toastListeners: ((msg: ToastMessage) => void)[] = [];
 
+// Phát một thông báo. id ghép từ thời điểm và một số ngẫu nhiên để hai thông báo
+// bật lên cùng lúc không trùng mã.
 export function showToast(type: ToastMessage['type'], message: string) {
   const msg: ToastMessage = {
     id: `${Date.now()}-${Math.random()}`,
@@ -22,6 +31,8 @@ export function showToast(type: ToastMessage['type'], message: string) {
 export default function ToastContainer() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+  // Đăng ký nhận thông báo khi component xuất hiện, và hủy đăng ký khi bị gỡ đi.
+  // Mỗi thông báo tự biến mất sau 4 giây.
   useEffect(() => {
     const handler = (msg: ToastMessage) => {
       setToasts((prev) => [...prev, msg]);

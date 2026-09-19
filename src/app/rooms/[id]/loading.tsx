@@ -1,4 +1,7 @@
-﻿export default function RoomDetailLoading() {
+﻿// Màn hình chờ của trang chi tiết phòng, dựng theo đúng bố cục trang thật:
+// ảnh lớn ở trên, thông tin bên trái, khung đặt phòng bên phải.
+
+export default function RoomDetailLoading() {
   return (
     <div className="container-airbnb py-8 sm:py-10">
       <div className="aspect-[16/9] w-full animate-pulse rounded-2xl bg-skeleton sm:aspect-[21/9]" />

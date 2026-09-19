@@ -10,6 +10,10 @@ import { normalizeApiError } from '@/lib/api-error';
 import { useAuthStore } from '@/store/auth-store';
 import { showToast } from '@/components/common/toast';
 
+// Form đăng nhập trong cửa sổ bật lên phía người dùng.
+// Khác trang đăng nhập quản trị ở chỗ: ở đây ai đăng nhập cũng được,
+// còn tài khoản có quyền ADMIN thì được hỏi thêm muốn vào với tư cách nào.
+
 interface SignInFormProps {
   onSuccess: () => void;
   onSwitchToSignUp: () => void;
@@ -18,6 +22,7 @@ interface SignInFormProps {
 export default function SignInForm({ onSuccess, onSwitchToSignUp }: SignInFormProps) {
   const setAuth = useAuthStore((s) => s.setAuth);
   const router = useRouter();
+  // Cho phép bấm nút Hiện để xem mật khẩu vừa gõ.
   const [showPassword, setShowPassword] = useState(false);
   // Khi tài khoản đăng nhập có quyền Admin, hiển thị màn hình cho chọn
   // vào với tư cách User hay chuyển sang khu vực quản trị.
@@ -32,12 +37,15 @@ export default function SignInForm({ onSuccess, onSwitchToSignUp }: SignInFormPr
     defaultValues: { email: '', password: '' },
   });
 
+  // Chạy khi bấm Đăng nhập và các ô đã hợp lệ.
   const onSubmit = async (values: SignInFormValues) => {
     try {
       const result = await signIn(values);
       setAuth(result.user, result.token);
       showToast('success', 'Đăng nhập thành công.');
 
+      // Tài khoản thường thì đóng cửa sổ và ở lại trang đang xem.
+      // Tài khoản quản trị thì chưa đóng vội, chuyển sang màn hình hỏi tư cách.
       if (result.user.role === 'ADMIN') {
         setAskAdminChoice(true);
         return;
@@ -50,15 +58,18 @@ export default function SignInForm({ onSuccess, onSwitchToSignUp }: SignInFormPr
     }
   };
 
+  // Chọn ở lại làm người dùng thường: chỉ đóng cửa sổ, không chuyển trang.
   function continueAsUser() {
     onSuccess();
   }
 
+  // Chọn vào khu quản trị: đóng cửa sổ rồi chuyển sang trang tổng quan.
   function continueAsAdmin() {
     onSuccess();
     router.push('/admin');
   }
 
+  // Màn hình hỏi tư cách, chỉ hiện với tài khoản quản trị sau khi đăng nhập xong.
   if (askAdminChoice) {
     return (
       <div className="flex flex-col gap-4">

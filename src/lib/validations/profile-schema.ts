@@ -1,7 +1,12 @@
+// Quy tắc kiểm tra dữ liệu cho form sửa hồ sơ cá nhân.
+
 import { z } from "zod";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+// Kiểm tra một chuỗi có phải ngày thật không.
+// Không dùng thẳng new Date vì JavaScript tự chuyển 2026-02-31 thành 03-03.
+// Ở đây dựng lại ngày rồi so từng phần năm, tháng, ngày, lệch là coi như sai.
 function parseDate(value: string): Date | null {
   if (!DATE_PATTERN.test(value)) return null;
 
@@ -19,6 +24,7 @@ function parseDate(value: string): Date | null {
   return date;
 }
 
+// Ngày sinh không được nằm ở tương lai. So theo giờ quốc tế để khỏi lệch múi giờ.
 function isNotInFuture(value: string): boolean {
   const date = parseDate(value);
   if (!date) return false;
@@ -33,6 +39,8 @@ function isNotInFuture(value: string): boolean {
   return date.getTime() <= today;
 }
 
+// Quy tắc cho từng ô trong form. refine là kiểm tra thêm sau khi ô đã đúng kiểu,
+// ví dụ số điện thoại phải có từ 9 đến 15 chữ số sau khi bỏ dấu cách và dấu gạch.
 export const profileSchema = z.object({
   name: z
     .string()

@@ -1,4 +1,7 @@
 ﻿import axios from "axios";
+// Trang chi tiết một phòng. Chạy ở máy chủ.
+// Địa chỉ dạng /rooms/12, con số 12 là mã phòng, Next.js đưa vào qua params.
+
 import { notFound } from "next/navigation";
 import type { Room } from "@/types/room";
 import { getRoomById } from "@/services/room-service";
@@ -13,8 +16,11 @@ import LocationMap from "@/components/room/location-map";
 import BookingCard from "@/components/booking/booking-card";
 import DataErrorState from "@/components/common/data-error-state";
 
+// Luôn lấy dữ liệu mới, vì bình luận và tình trạng phòng thay đổi liên tục.
 export const dynamic = "force-dynamic";
 
+// Mã phòng lấy từ địa chỉ nên có thể là bất cứ thứ gì người dùng gõ vào.
+// Chỉ nhận chuỗi toàn chữ số và từ 1 trở lên, còn lại trả về -1 để báo không hợp lệ.
 function parseId(raw: string): number {
   if (!/^\d+$/.test(raw)) {
     return -1;
@@ -48,12 +54,15 @@ export default async function RoomDetailPage({
   const { id: rawId } = await params;
   const roomId = parseId(rawId);
 
+  // Mã phòng không hợp lệ thì hiện luôn trang 404, khỏi gọi API cho tốn.
   if (roomId === -1) {
     notFound();
   }
 
   const query = await searchParams;
 
+  // Ngày và số khách người dùng đã chọn ở trang trước được mang theo trên địa chỉ,
+  // để form đặt phòng bên dưới điền sẵn, không bắt chọn lại từ đầu.
   const initialCheckIn =
     typeof query.checkIn === "string"
       ? query.checkIn
@@ -82,6 +91,9 @@ export default async function RoomDetailPage({
 
   let room: Room;
 
+  // Phòng là dữ liệu bắt buộc: không có nó thì không vẽ được trang.
+  // Server trả 404 nghĩa là phòng không tồn tại, hiện trang không tìm thấy.
+  // Lỗi khác, ví dụ mất mạng, thì ném tiếp cho file error.tsx xử lý.
   try {
     room = await getRoomById(roomId);
   } catch (error: unknown) {
@@ -113,6 +125,10 @@ export default async function RoomDetailPage({
 
   let commentsFailed = false;
 
+  // Vị trí và bình luận là dữ liệu phụ. Dùng Promise.allSettled chứ không phải
+  // Promise.all: allSettled chờ cả hai xong rồi báo từng cái thành hay bại,
+  // còn all thì chỉ một cái hỏng là hỏng cả hai. Nhờ vậy bình luận lỗi thì
+  // phần bình luận báo lỗi riêng, còn thông tin phòng vẫn hiện bình thường.
   const [
     locationResult,
     commentsResult,

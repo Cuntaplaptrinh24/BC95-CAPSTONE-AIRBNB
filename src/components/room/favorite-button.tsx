@@ -18,15 +18,23 @@ interface FavoriteButtonProps {
   room: Room;
 }
 
+// Nút trái tim lưu phòng yêu thích. Danh sách yêu thích nằm trong bộ nhớ trình duyệt
+// chứ không nằm trên server, vì API lớp học không có chức năng này.
 export default function FavoriteButton({
   room,
 }: FavoriteButtonProps) {
+  // useSyncExternalStore là cách React đọc dữ liệu từ một kho nằm ngoài React.
+  // Ba tham số: cách đăng ký nghe thay đổi, cách đọc giá trị ở trình duyệt,
+  // và cách đọc khi trang được dựng ở máy chủ.
+  // Nhờ nó, bấm tim ở một thẻ phòng thì mọi thẻ của cùng phòng đó cùng sáng.
   const snapshot = useSyncExternalStore(
     subscribeFavorites,
     getFavoritesSnapshot,
     getServerFavoritesSnapshot,
   );
 
+  // Xem phòng này có trong danh sách yêu thích chưa.
+  // useMemo để khỏi phải đọc và duyệt lại danh sách ở mỗi lần vẽ.
   const active = useMemo(
     () =>
       parseFavorites(snapshot).some(
@@ -35,6 +43,7 @@ export default function FavoriteButton({
     [room.id, snapshot],
   );
 
+  // Bấm nút: thêm vào hoặc bỏ ra, rồi báo một câu cho người dùng biết.
   const handleToggle = () => {
     const result = toggleFavorite(room);
 

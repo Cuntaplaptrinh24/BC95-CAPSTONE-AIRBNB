@@ -1,5 +1,8 @@
 "use client";
 
+// Phần sửa thông tin cá nhân trong trang hồ sơ: họ tên, email, số điện thoại,
+// ngày sinh, giới tính, và đổi ảnh đại diện.
+
 import { useRef, useState, type ChangeEvent } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +19,8 @@ import {
 import { showToast } from "@/components/common/toast";
 import type { User } from "@/types/user";
 
+// Giới hạn ảnh đại diện 5 MB và chỉ nhận vài định dạng ảnh thông dụng.
+// Chặn ngay ở trình duyệt để khỏi tải lên rồi mới bị server từ chối.
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
 
 const ACCEPTED_AVATAR_TYPES = new Set([
@@ -30,11 +35,14 @@ interface ProfileEditorProps {
   onUpdated: (user: User) => void;
 }
 
+// Ngày từ API có kèm giờ, ô chọn ngày của trình duyệt chỉ nhận phần ngày,
+// nên cắt lấy 10 ký tự đầu.
 function toDateInput(value: string): string {
   const match = value?.match(/^\d{4}-\d{2}-\d{2}/);
   return match?.[0] ?? "";
 }
 
+// Đổ thông tin hiện tại của người dùng vào form.
 function getDefaultValues(user: User): ProfileFormValues {
   return {
     name: user.name,
@@ -50,6 +58,7 @@ export default function ProfileEditor({
   accessToken,
   onUpdated,
 }: ProfileEditorProps) {
+  // editing quyết định đang ở chế độ xem hay chế độ sửa.
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -66,11 +75,13 @@ export default function ProfileEditor({
     defaultValues: getDefaultValues(user),
   });
 
+  // Bấm hủy: thoát chế độ sửa và trả các ô về giá trị ban đầu.
   const handleCancel = () => {
     reset(getDefaultValues(user));
     setEditing(false);
   };
 
+  // Lưu thông tin: gọi API cập nhật rồi báo lên trang cha để cập nhật màn hình.
   const handleProfileSubmit = async (
     values: ProfileFormValues,
   ) => {
@@ -106,6 +117,8 @@ export default function ProfileEditor({
     }
   };
 
+  // Đổi ảnh đại diện. Ảnh gửi lên bằng API riêng và gửi ngay khi chọn xong,
+  // không chờ bấm lưu, nên phải kiểm tra dung lượng và định dạng trước.
   const handleAvatarChange = async (
     event: ChangeEvent<HTMLInputElement>,
   ) => {

@@ -12,8 +12,12 @@ import type {
   Comment,
 } from "@/types/comment";
 
+// Khối đánh giá gần đây ở trang chủ. Chạy ở máy chủ, tự gọi API lấy bình luận.
+
+// Chỉ hiện 6 đánh giá mới nhất.
 const REVIEW_LIMIT = 6;
 
+// Ép số sao về khoảng 1 tới 5, phòng khi dữ liệu trả về là 0 hoặc số lạ.
 function parseRating(
   value: number,
 ): number {
@@ -30,6 +34,7 @@ function parseRating(
   );
 }
 
+// Đổi chuỗi ngày thành số để so sánh. Ngày hỏng thì trả về 0 nên bị xếp xuống cuối.
 function parseDate(
   value: string,
 ): number {
@@ -65,6 +70,9 @@ function formatDate(
   );
 }
 
+// Sắp xếp mới nhất lên đầu. Hai bình luận cùng ngày thì cái có mã lớn hơn
+// coi như mới hơn, để thứ tự luôn cố định chứ không đảo lộn mỗi lần tải lại.
+// Dùng [...comments] để sắp trên một bản sao, không sửa vào danh sách gốc.
 function sortLatest(
   comments: Comment[],
 ): Comment[] {
@@ -92,6 +100,7 @@ function sortLatest(
 }
 
 export default async function RecentReviews() {
+  // Gọi API hỏng thì chỉ khối này báo lỗi, các khối khác của trang chủ vẫn hiện.
   let comments: Comment[] = [];
   let failed = false;
 

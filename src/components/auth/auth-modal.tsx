@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import SignInForm from './sign-in-form';
 import SignUpForm from './sign-up-form';
 
+// Cửa sổ đăng nhập và đăng ký, bật lên giữa màn hình.
+// Nó không có địa chỉ riêng, chỉ là một lớp phủ trong trang đang mở.
+// Bên trong chứa hai form, đổi qua lại bằng biến view.
+
 type AuthView = 'signin' | 'signup';
 
 interface AuthModalProps {
@@ -16,6 +20,9 @@ export default function AuthModal({ open, onClose, initialView = 'signin' }: Aut
   const [view, setView] = useState<AuthView>(initialView);
   const dialogRef = useRef<HTMLDivElement>(null);
 
+  // Trong lúc cửa sổ mở: bấm phím Esc thì đóng, và khóa cuộn của trang phía sau
+  // để cuộn chuột không làm trôi nền. Hàm trả về ở cuối gỡ hai thứ đó khi đóng,
+  // trả lại trạng thái cuộn như cũ.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -30,6 +37,8 @@ export default function AuthModal({ open, onClose, initialView = 'signin' }: Aut
     };
   }, [open, onClose]);
 
+  // Bấm vào vùng nền tối bên ngoài thì đóng. So sánh e.target với e.currentTarget
+  // để chỉ đóng khi bấm đúng lớp nền, bấm vào trong hộp thì không đóng.
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (e.target === e.currentTarget) onClose();
@@ -37,6 +46,7 @@ export default function AuthModal({ open, onClose, initialView = 'signin' }: Aut
     [onClose],
   );
 
+  // Đang đóng thì không vẽ gì cả.
   if (!open) return null;
 
   return (
