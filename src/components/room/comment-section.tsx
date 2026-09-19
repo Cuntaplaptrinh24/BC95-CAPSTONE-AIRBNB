@@ -48,13 +48,32 @@ interface EditableComment extends Comment {
   _localName?: string;
 }
 
+// Sắp bình luận mới nhất lên đầu.
+// API trả về theo thứ tự cũ trước, nên viết xong bình luận mới rơi xuống tận cuối
+// danh sách, người viết tưởng là không gửi được.
+// Cùng ngày thì cái có mã lớn hơn coi như mới hơn, để thứ tự luôn cố định.
+function sortNewestFirst<T extends Comment>(list: T[]): T[] {
+  return [...list].sort((first, second) => {
+    const firstTime = new Date(first.ngayBinhLuan).getTime() || 0;
+    const secondTime = new Date(second.ngayBinhLuan).getTime() || 0;
+
+    if (firstTime !== secondTime) {
+      return secondTime - firstTime;
+    }
+
+    return second.id - first.id;
+  });
+}
+
 export default function CommentSection({
   roomId,
   initialComments,
   failed: initialFailed,
 }: CommentSectionProps) {
   const { user, accessToken, isAuthenticated, hasHydrated } = useAuthStore();
-  const [comments, setComments] = useState<EditableComment[]>(initialComments);
+  const [comments, setComments] = useState<EditableComment[]>(
+    sortNewestFirst(initialComments),
+  );
   const [failed, setFailed] = useState(initialFailed);
   const [content, setContent] = useState("");
   const [rating, setRating] = useState(5);
@@ -74,7 +93,7 @@ export default function CommentSection({
   const refresh = async () => {
     try {
       const fresh = await getCommentsByRoom(roomId);
-      setComments(fresh ?? []);
+      setComments(sortNewestFirst(fresh ?? []));
       setFailed(false);
     } catch {
       setFailed(true);
@@ -110,7 +129,9 @@ export default function CommentSection({
 
     setSubmitting(true);
     try {
-      await createComment(
+      // Giữ lại bình luận vừa tạo do server trả về, phòng trường hợp lần gọi lại
+      // danh sách ngay sau đó chưa kịp có nó.
+      const created = await createComment(
         {
           id: 0,
           maPhong: roomId,
@@ -124,7 +145,27 @@ export default function CommentSection({
       setContent("");
       setRating(5);
       showToast("success", "Đã thêm bình luận.");
-      await refresh();
+
+      try {
+        const fresh = await getCommentsByRoom(roomId);
+        const list = fresh ?? [];
+
+        // Danh sách mới chưa có bình luận vừa viết thì tự chèn vào đầu,
+        // để người viết thấy ngay thay vì tưởng gửi hỏng.
+        const hasCreated = list.some(
+          (item) => item.id === created.id,
+        );
+
+        setComments(
+          sortNewestFirst(
+            hasCreated ? list : [created, ...list],
+          ),
+        );
+
+        setFailed(false);
+      } catch {
+        setFailed(true);
+      }
     } catch (err: unknown) {
       const apiError = normalizeApiError(err);
       setFormError(apiError.message);

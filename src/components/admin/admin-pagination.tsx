@@ -9,13 +9,20 @@ interface AdminPaginationProps {
   currentPage: number;
   totalPages: number;
   keyword?: string;
+  sort?: string;
 }
 
 // Ghép ra địa chỉ cho một số trang, ví dụ /admin/users?keyword=an&page=3.
 // Giữ lại từ khóa đang tìm để chuyển trang không làm mất kết quả tìm kiếm.
-function buildHref(basePath: string, page: number, keyword?: string): string {
+function buildHref(
+  basePath: string,
+  page: number,
+  keyword?: string,
+  sort?: string,
+): string {
   const params = new URLSearchParams();
   if (keyword) params.set('keyword', keyword);
+  if (sort) params.set('sort', sort);
   params.set('page', String(page));
   return `${basePath}?${params.toString()}`;
 }
@@ -37,6 +44,7 @@ export default function AdminPagination({
   currentPage,
   totalPages,
   keyword,
+  sort,
 }: AdminPaginationProps) {
   // Chỉ có một trang thì không cần vẽ thanh phân trang.
   if (totalPages <= 1) {
@@ -59,7 +67,7 @@ export default function AdminPagination({
         </span>
       ) : (
         <Link
-          href={buildHref(basePath, currentPage - 1, keyword)}
+          href={buildHref(basePath, currentPage - 1, keyword, sort)}
           aria-label="Trang trước"
           className="flex h-9 w-9 items-center justify-center rounded-full text-foreground transition hover:bg-surface"
         >
@@ -70,7 +78,7 @@ export default function AdminPagination({
       {windowPages.map((page) => (
         <Link
           key={page}
-          href={buildHref(basePath, page, keyword)}
+          href={buildHref(basePath, page, keyword, sort)}
           aria-label={`Trang ${page}`}
           aria-current={page === currentPage ? 'page' : undefined}
           className={`flex h-9 w-9 items-center justify-center rounded-full text-sm transition ${
@@ -92,7 +100,7 @@ export default function AdminPagination({
         </span>
       ) : (
         <Link
-          href={buildHref(basePath, currentPage + 1, keyword)}
+          href={buildHref(basePath, currentPage + 1, keyword, sort)}
           aria-label="Trang sau"
           className="flex h-9 w-9 items-center justify-center rounded-full text-foreground transition hover:bg-surface"
         >

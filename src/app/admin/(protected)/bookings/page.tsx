@@ -3,6 +3,7 @@
 import type { Metadata } from 'next';
 import { getBookings } from '@/services/booking-service';
 import { getRooms } from '@/services/room-service';
+import { getUserById } from '@/services/user-service';
 import AdminSearchForm from '@/components/admin/admin-search-form';
 import AdminPagination from '@/components/admin/admin-pagination';
 import BookingsPanel from '@/components/admin/bookings/bookings-panel';
@@ -75,6 +76,26 @@ export default async function AdminBookingsPage({ searchParams }: AdminBookingsP
   const startIndex = (pageIndex - 1) * PAGE_SIZE;
   const pageItems = filtered.slice(startIndex, startIndex + PAGE_SIZE);
 
+  // Bảng chỉ lưu mã người đặt. Lấy tên của đúng những người xuất hiện trên trang này
+  // (nhiều nhất 10 người) thay vì tải cả mấy nghìn tài khoản về.
+  // Dùng allSettled để một lời gọi hỏng không làm cả trang lỗi; chỗ nào thiếu tên
+  // thì bảng hiện lại mã như cũ.
+  const userIds = Array.from(
+    new Set(pageItems.map((booking) => booking.maNguoiDung)),
+  );
+
+  const userResults = await Promise.allSettled(
+    userIds.map((id) => getUserById(id)),
+  );
+
+  const userNameByCode: Record<number, string> = {};
+
+  userResults.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      userNameByCode[userIds[index]] = result.value.name;
+    }
+  });
+
   return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -95,6 +116,7 @@ export default async function AdminBookingsPage({ searchParams }: AdminBookingsP
           bookings={pageItems}
           roomNameByCode={roomNameByCode}
           roomCapacityByCode={roomCapacityByCode}
+          userNameByCode={userNameByCode}
         />
 
         <AdminPagination

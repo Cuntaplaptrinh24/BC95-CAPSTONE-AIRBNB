@@ -132,6 +132,18 @@ export default function RoomsPanel({ rooms, locations }: RoomsPanelProps) {
               className: 'text-right',
               render: (row) => (
                 <div className="flex justify-end gap-2">
+                  {/* Mở đúng phòng này trên giao diện người dùng, ở tab mới,
+                      để xem khách nhìn thấy gì mà không rời khu quản trị.
+                      rel="noreferrer" là thói quen khi mở tab mới, tránh trang mới
+                      can thiệp ngược lại trang đang mở. */}
+                  <a
+                    href={`/rooms/${row.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground transition hover:bg-surface"
+                  >
+                    Xem
+                  </a>
                   <button
                     type="button"
                     onClick={() => openEditForm(row)}

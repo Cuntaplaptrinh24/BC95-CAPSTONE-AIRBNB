@@ -7,6 +7,7 @@ interface AdminSearchFormProps {
   basePath: string;
   keyword?: string;
   placeholder?: string;
+  sort?: string;
 }
 
 // Ô tìm kiếm dùng chung cho các màn hình quản lý.
@@ -17,6 +18,7 @@ export default function AdminSearchForm({
   basePath,
   keyword = '',
   placeholder = 'Tìm kiếm...',
+  sort,
 }: AdminSearchFormProps) {
   const router = useRouter();
 
@@ -30,8 +32,13 @@ export default function AdminSearchForm({
     const trimmed = value.trim();
     // Bỏ trống thì về địa chỉ gốc, tức xem lại toàn bộ danh sách.
     // encodeURIComponent mã hóa dấu cách và ký tự tiếng Việt cho hợp lệ trên địa chỉ.
-    const query = trimmed ? `?keyword=${encodeURIComponent(trimmed)}` : '';
-    router.push(`${basePath}${query}`);
+    // Ghép địa chỉ mới, giữ lại cách sắp xếp đang chọn nếu có.
+    const params = new URLSearchParams();
+    if (trimmed) params.set('keyword', trimmed);
+    if (sort) params.set('sort', sort);
+
+    const query = params.toString();
+    router.push(query ? `${basePath}?${query}` : basePath);
   }
 
   return (

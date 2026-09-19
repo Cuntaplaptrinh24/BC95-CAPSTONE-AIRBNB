@@ -5,6 +5,7 @@ import { getComments } from '@/services/comment-service';
 import { getRooms } from '@/services/room-service';
 import AdminSearchForm from '@/components/admin/admin-search-form';
 import AdminPagination from '@/components/admin/admin-pagination';
+import AdminSortSelect from '@/components/admin/admin-sort-select';
 import CommentsPanel from '@/components/admin/comments/comments-panel';
 
 // Tiêu đề hiện trên tab trình duyệt khi mở trang này.
@@ -18,6 +19,16 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 10;
+
+// Bốn cách sắp xếp cho người kiểm duyệt chọn.
+// Mặc định là mới nhất trước, vì bình luận mới là thứ cần xem trước.
+// Sao thấp nhất trước dùng khi muốn soi những đánh giá tệ.
+const SORT_OPTIONS = [
+  { value: 'moi-nhat', label: 'Mới nhất' },
+  { value: 'cu-nhat', label: 'Cũ nhất' },
+  { value: 'sao-thap', label: 'Sao thấp trước' },
+  { value: 'sao-cao', label: 'Sao cao trước' },
+];
 const BASE_PATH = '/admin/comments';
 
 // searchParams là phần đứng sau dấu hỏi trên địa chỉ, ví dụ ?keyword=an&page=2.
@@ -42,6 +53,12 @@ export default async function AdminCommentsPage({ searchParams }: AdminCommentsP
   const pageIndex = Number(rawPage) > 0 ? Number(rawPage) : 1;
   const keyword = rawKeyword?.trim().toLowerCase() || undefined;
 
+  // Cách sắp xếp cũng đọc từ địa chỉ. Giá trị lạ thì quay về mặc định.
+  const rawSort = Array.isArray(raw.sort) ? raw.sort[0] : raw.sort;
+  const sort = SORT_OPTIONS.some((option) => option.value === rawSort)
+    ? (rawSort as string)
+    : 'moi-nhat';
+
   const [allComments, rooms] = await Promise.all([getComments(), getRooms()]);
 
   // Bình luận chỉ lưu mã phòng, nên dựng bảng tra cứu từ mã sang tên phòng.
@@ -59,11 +76,33 @@ export default async function AdminCommentsPage({ searchParams }: AdminCommentsP
       })
     : allComments;
 
+  // Sắp xếp trước khi cắt trang, để thứ tự áp dụng cho cả danh sách
+  // chứ không chỉ cho 10 dòng đang xem.
+  // Hai cách sắp theo sao thì cùng số sao lấy bình luận mới hơn lên trước.
+  const sorted = [...filtered].sort((first, second) => {
+    const firstTime = new Date(first.ngayBinhLuan).getTime() || 0;
+    const secondTime = new Date(second.ngayBinhLuan).getTime() || 0;
+
+    if (sort === 'cu-nhat') {
+      return firstTime - secondTime || first.id - second.id;
+    }
+
+    if (sort === 'sao-thap' && first.saoBinhLuan !== second.saoBinhLuan) {
+      return first.saoBinhLuan - second.saoBinhLuan;
+    }
+
+    if (sort === 'sao-cao' && first.saoBinhLuan !== second.saoBinhLuan) {
+      return second.saoBinhLuan - first.saoBinhLuan;
+    }
+
+    return secondTime - firstTime || second.id - first.id;
+  });
+
   // Tự cắt danh sách đã lọc thành từng trang 10 dòng.
-  const totalRow = filtered.length;
+  const totalRow = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalRow / PAGE_SIZE));
   const startIndex = (pageIndex - 1) * PAGE_SIZE;
-  const pageItems = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+  const pageItems = sorted.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
     <div>
@@ -73,11 +112,21 @@ export default async function AdminCommentsPage({ searchParams }: AdminCommentsP
           <p className="text-sm text-secondary">Tổng số: {totalRow} bình luận</p>
         </div>
 
-        <AdminSearchForm
-          basePath={BASE_PATH}
-          keyword={keyword}
-          placeholder="Tìm theo phòng, nội dung, người bình luận..."
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <AdminSortSelect
+            basePath={BASE_PATH}
+            sort={sort}
+            keyword={keyword}
+            options={SORT_OPTIONS}
+          />
+
+          <AdminSearchForm
+            basePath={BASE_PATH}
+            keyword={keyword}
+            sort={sort}
+            placeholder="Tìm theo phòng, nội dung, người bình luận..."
+          />
+        </div>
       </div>
 
       <div className="mt-6">
@@ -88,6 +137,7 @@ export default async function AdminCommentsPage({ searchParams }: AdminCommentsP
           currentPage={pageIndex}
           totalPages={totalPages}
           keyword={keyword}
+          sort={sort}
         />
       </div>
     </div>

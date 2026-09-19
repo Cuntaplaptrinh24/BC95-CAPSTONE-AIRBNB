@@ -16,6 +16,7 @@ interface BookingsPanelProps {
   bookings: Booking[];
   roomNameByCode: Record<number, string>;
   roomCapacityByCode: Record<number, number>;
+  userNameByCode: Record<number, string>;
 }
 
 // Đổi ngày từ dạng API trả về sang dạng quen mắt của người Việt, ví dụ 25/12/2026.
@@ -34,6 +35,7 @@ export default function BookingsPanel({
   bookings,
   roomNameByCode,
   roomCapacityByCode,
+  userNameByCode,
 }: BookingsPanelProps) {
   // Dùng để bảo Next.js tải lại dữ liệu của trang sau khi thêm, sửa hoặc xóa xong.
   const router = useRouter();
@@ -97,7 +99,10 @@ export default function BookingsPanel({
           {
             key: 'nguoiDung',
             header: 'Mã người dùng',
-            render: (row) => row.maNguoiDung,
+            // Có tên thì hiện tên, không lấy được thì hiện lại mã như cũ.
+            render: (row) =>
+              userNameByCode[row.maNguoiDung] ??
+              `Mã người dùng ${row.maNguoiDung}`,
           },
           {
             key: 'actions',
