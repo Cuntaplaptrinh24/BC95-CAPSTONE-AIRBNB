@@ -1,7 +1,12 @@
+// File này mô tả dữ liệu hợp lệ cho các form trong khu vực quản trị:
+// người dùng, vị trí, phòng thuê, đặt phòng, bình luận.
+// Mỗi dòng kèm sẵn câu báo lỗi sẽ hiện ngay dưới ô nhập khi nhập sai.
+
 import { z } from 'zod';
 import { USER_ROLES } from '@/types/user';
 
-// Các trường dùng chung cho tạo mới và chỉnh sửa người dùng ở Admin.
+// Những ô nhập giống nhau giữa form thêm mới và form sửa người dùng.
+// Tách riêng ra đây để khỏi viết lại hai lần.
 const adminUserBaseFields = {
   name: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự.'),
   email: z.string().min(1, 'Vui lòng nhập email.').email('Email không hợp lệ.'),
@@ -14,17 +19,19 @@ const adminUserBaseFields = {
   role: z.enum(USER_ROLES, { message: 'Vui lòng chọn vai trò.' }),
 };
 
+// Thêm người dùng mới thì cần thêm ô mật khẩu.
 export const adminCreateUserSchema = z.object({
   ...adminUserBaseFields,
   password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự.'),
 });
 
+// Sửa người dùng thì không đụng tới mật khẩu, nên dùng đúng phần chung.
 export const adminUpdateUserSchema = z.object(adminUserBaseFields);
 
 export type AdminCreateUserFormValues = z.infer<typeof adminCreateUserSchema>;
 export type AdminUpdateUserFormValues = z.infer<typeof adminUpdateUserSchema>;
 
-// Vị trí (Locations)
+// Vị trí: ba ô đều bắt buộc nhập.
 export const adminLocationSchema = z.object({
   tenViTri: z.string().min(1, 'Vui lòng nhập tên vị trí.'),
   tinhThanh: z.string().min(1, 'Vui lòng nhập tỉnh/thành.'),
@@ -33,10 +40,12 @@ export const adminLocationSchema = z.object({
 
 export type AdminLocationFormValues = z.infer<typeof adminLocationSchema>;
 
-// Phòng thuê (Rooms)
-// Lưu ý: các trường số dùng z.number() (không coerce) vì input đã chuyển
-// sang number tại register(..., { valueAsNumber: true }), tránh lệch kiểu
-// input/output của zod khi dùng chung với react-hook-form.
+// Phòng thuê: phần đầu là thông tin phòng, phần sau là danh sách tiện nghi,
+// mỗi tiện nghi chỉ có hoặc không nên khai báo kiểu đúng sai.
+//
+// Các ô số ở đây nhận thẳng kiểu số, vì lúc khai báo ô nhập trong form đã
+// bật sẵn tùy chọn đổi chữ thành số. Nếu để chỗ này đổi kiểu một lần nữa
+// thì hai bên hiểu khác nhau và form báo lỗi sai.
 export const adminRoomSchema = z.object({
   tenPhong: z.string().min(1, 'Vui lòng nhập tên phòng.'),
   maViTri: z.number().int().min(1, 'Vui lòng chọn vị trí.'),
@@ -59,13 +68,15 @@ export const adminRoomSchema = z.object({
 
 export type AdminRoomFormValues = z.infer<typeof adminRoomSchema>;
 
-// Đặt phòng (Bookings) — Admin chỉ chỉnh sửa ngày và số khách, không đổi phòng/người đặt.
+// Đặt phòng: quản trị chỉ sửa ngày và số khách, không đổi phòng hay người đặt,
+// vì lượt đặt là do người dùng tạo ra.
 export const adminBookingSchema = z
   .object({
     ngayDen: z.string().min(1, 'Vui lòng chọn ngày đến.'),
     ngayDi: z.string().min(1, 'Vui lòng chọn ngày đi.'),
     soLuongKhach: z.number().int().min(1, 'Số khách tối thiểu là 1.'),
   })
+  // Kiểm tra thêm sau khi từng ô đã hợp lệ: ngày đi phải sau ngày đến.
   .refine((values) => new Date(values.ngayDi) > new Date(values.ngayDen), {
     message: 'Ngày đi phải sau ngày đến.',
     path: ['ngayDi'],
@@ -73,8 +84,8 @@ export const adminBookingSchema = z
 
 export type AdminBookingFormValues = z.infer<typeof adminBookingSchema>;
 
-// Bình luận (Comments) — Admin chỉ kiểm duyệt nội dung và số sao, không đổi
-// phòng/người bình luận/ngày bình luận vì gắn với bình luận gốc.
+// Bình luận: quản trị chỉ sửa nội dung và số sao, tính từ 1 tới 5.
+// Không đổi phòng, người viết hay ngày viết vì đó là thông tin của bình luận gốc.
 export const adminCommentSchema = z.object({
   noiDung: z.string().min(1, 'Vui lòng nhập nội dung bình luận.'),
   saoBinhLuan: z.number().int().min(1, 'Số sao tối thiểu là 1.').max(5, 'Số sao tối đa là 5.'),

@@ -1,10 +1,16 @@
-﻿import { z } from 'zod';
+﻿// File này mô tả dữ liệu thế nào là hợp lệ cho form đăng nhập và đăng ký.
+// Form dựa vào đây để báo lỗi ngay tại chỗ, trước khi gửi lên server.
 
+import { z } from 'zod';
+
+// Đăng nhập: email phải đúng dạng, mật khẩu từ 6 ký tự trở lên.
 export const signInSchema = z.object({
   email: z.string().min(1, 'Vui lòng nhập email.').email('Email không hợp lệ.'),
   password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự.'),
 });
 
+// Đăng ký: ngoài email và mật khẩu còn cần họ tên, số điện thoại,
+// ngày sinh và giới tính. Mỗi dòng kèm sẵn câu báo lỗi hiện cho người dùng.
 export const signUpSchema = z.object({
   name: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự.'),
   email: z.string().min(1, 'Vui lòng nhập email.').email('Email không hợp lệ.'),
@@ -17,5 +23,7 @@ export const signUpSchema = z.object({
   gender: z.boolean({ message: 'Vui lòng chọn giới tính.' }),
 });
 
+// Hai dòng dưới tạo ra kiểu dữ liệu của form từ đúng phần mô tả ở trên,
+// nên sửa mô tả là kiểu dữ liệu tự đổi theo, không phải khai báo hai lần.
 export type SignInFormValues = z.infer<typeof signInSchema>;
 export type SignUpFormValues = z.infer<typeof signUpSchema>;

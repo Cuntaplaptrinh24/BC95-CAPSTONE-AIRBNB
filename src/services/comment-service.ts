@@ -10,9 +10,14 @@ import type {
   UpdateCommentPayload,
 } from "@/types";
 
+// Các lời gọi API về bình luận.
+// Khu quản trị dùng getComments để lấy toàn bộ, updateComment để kiểm duyệt,
+// deleteComment để gỡ bình luận. Hai hàm còn lại là của phần người dùng.
+
 const RESOURCE = "/binh-luan";
 
-// Lấy toàn bộ bình luận
+// Lấy toàn bộ bình luận. API không có sẵn phân trang nên trang quản lý
+// phải tải hết rồi tự lọc và tự cắt trang.
 export async function getComments(): Promise<
   Comment[]
 > {

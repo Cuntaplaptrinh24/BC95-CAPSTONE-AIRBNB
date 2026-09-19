@@ -8,6 +8,9 @@ import type {
   UpdateRoomPayload,
 } from '@/types';
 
+// Các lời gọi API về phòng thuê.
+// Hàm nào có authHeader là việc của quản trị, phải kèm token người đăng nhập.
+
 const RESOURCE = '/phong-thue';
 
 export async function getRooms(): Promise<Room[]> {
@@ -23,6 +26,7 @@ export async function getRoomsByLocation(maViTri: number): Promise<Room[]> {
   return data.content;
 }
 
+// Lấy một trang phòng kèm từ khóa tìm kiếm, dùng cho trang quản lý Phòng thuê.
 export async function getRoomsPaged(
   params: PaginationParams,
 ): Promise<PaginatedContent<Room>> {
@@ -72,7 +76,7 @@ export async function deleteRoom(id: number, authHeader: AuthHeader): Promise<vo
   });
 }
 
-// Upload hình ảnh phòng (Admin)
+// Tải ảnh phòng lên. Giống ảnh vị trí, cần mã phòng nên chỉ dùng được khi sửa.
 export async function uploadRoomImage(
   maPhong: number,
   file: File,

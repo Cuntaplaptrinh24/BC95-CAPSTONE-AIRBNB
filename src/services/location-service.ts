@@ -8,13 +8,18 @@ import type {
   UpdateLocationPayload,
 } from '@/types';
 
+// Các lời gọi API về vị trí.
+// Hàm nào có authHeader là việc của quản trị, phải kèm token người đăng nhập.
+
 const RESOURCE = '/vi-tri';
 
+// Lấy toàn bộ vị trí, dùng cho trang chủ và cho ô chọn vị trí trong form thêm phòng.
 export async function getLocations(): Promise<Location[]> {
   const { data } = await apiClient.get<CyberSoftEnvelope<Location[]>>(RESOURCE);
   return data.content;
 }
 
+// Lấy một trang vị trí kèm từ khóa tìm kiếm, dùng cho trang quản lý Vị trí.
 export async function getLocationsPaged(
   params: PaginationParams,
 ): Promise<PaginatedContent<Location>> {
@@ -64,7 +69,8 @@ export async function deleteLocation(id: number, authHeader: AuthHeader): Promis
   });
 }
 
-// Upload hình ảnh vị trí (Admin)
+// Tải ảnh vị trí lên. Cần mã vị trí nên chỉ gọi được khi vị trí đã tồn tại,
+// đó là lý do form thêm mới chưa cho chọn ảnh.
 export async function uploadLocationImage(
   maViTri: number,
   file: File,
