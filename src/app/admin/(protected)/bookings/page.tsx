@@ -50,6 +50,11 @@ export default async function AdminBookingsPage({ searchParams }: AdminBookingsP
   // bảng tra cứu từ mã sang tên, để bảng bên dưới hiện tên phòng cho dễ đọc.
   const roomNameByCode = Object.fromEntries(rooms.map((room) => [room.id, room.tenPhong]));
 
+  // Bảng tra sức chứa theo mã phòng, để form sửa chặn số khách vượt quá phòng.
+  const roomCapacityByCode = Object.fromEntries(
+    rooms.map((room) => [room.id, room.khach]),
+  );
+
   // Có từ khóa thì lọc theo tên phòng, mã phòng hoặc mã người đặt.
   // Không có thì giữ nguyên cả danh sách.
   const filtered = keyword
@@ -86,7 +91,11 @@ export default async function AdminBookingsPage({ searchParams }: AdminBookingsP
       </div>
 
       <div className="mt-6">
-        <BookingsPanel bookings={pageItems} roomNameByCode={roomNameByCode} />
+        <BookingsPanel
+          bookings={pageItems}
+          roomNameByCode={roomNameByCode}
+          roomCapacityByCode={roomCapacityByCode}
+        />
 
         <AdminPagination
           basePath={BASE_PATH}

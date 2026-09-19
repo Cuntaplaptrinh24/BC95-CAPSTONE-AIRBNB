@@ -15,6 +15,7 @@ import type { Booking } from '@/types';
 interface BookingsPanelProps {
   bookings: Booking[];
   roomNameByCode: Record<number, string>;
+  roomCapacityByCode: Record<number, number>;
 }
 
 // Đổi ngày từ dạng API trả về sang dạng quen mắt của người Việt, ví dụ 25/12/2026.
@@ -29,7 +30,11 @@ function formatDate(value: string): string {
 
 // Phần tương tác của trang Đặt phòng: vẽ bảng, sửa ngày và số khách, xóa lượt đặt.
 // Không có nút thêm mới, vì lượt đặt phòng chỉ phát sinh khi người dùng tự đặt.
-export default function BookingsPanel({ bookings, roomNameByCode }: BookingsPanelProps) {
+export default function BookingsPanel({
+  bookings,
+  roomNameByCode,
+  roomCapacityByCode,
+}: BookingsPanelProps) {
   // Dùng để bảo Next.js tải lại dữ liệu của trang sau khi thêm, sửa hoặc xóa xong.
   const router = useRouter();
 
@@ -127,6 +132,7 @@ export default function BookingsPanel({ bookings, roomNameByCode }: BookingsPane
         <BookingFormModal
           booking={editingBooking}
           roomName={roomNameByCode[editingBooking.maPhong] ?? `Mã phòng ${editingBooking.maPhong}`}
+          roomCapacity={roomCapacityByCode[editingBooking.maPhong]}
           onClose={() => setEditingBooking(null)}
           onSaved={handleFormSaved}
         />

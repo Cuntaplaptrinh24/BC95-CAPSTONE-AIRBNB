@@ -1,5 +1,8 @@
 ﻿"use client";
 
+// Khung đặt phòng ở trang chi tiết: chọn ngày, chọn số khách, xem tổng tiền, bấm đặt.
+// Chạy trong trình duyệt vì cần bắt thao tác của người dùng và cần biết ai đang đăng nhập.
+
 import { useEffect, useMemo, useState } from "react";
 import type { Room } from "@/types/room";
 import type { CreateBookingPayload } from "@/types/booking";
@@ -21,8 +24,12 @@ interface BookingCardProps {
   initialGuests?: number;
 }
 
+// Số mili giây của một ngày, dùng để đổi khoảng cách hai ngày ra số đêm.
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+// Lấy ngày hôm nay theo giờ máy người dùng, dạng 2026-09-19.
+// Phải trừ đi độ lệch múi giờ, vì toISOString trả về giờ quốc tế,
+// ở Việt Nam sau 7 giờ tối sẽ ra nhầm sang ngày hôm sau.
 function todayISO(): string {
   const date = new Date();
   const offset = date.getTimezoneOffset();
@@ -34,6 +41,7 @@ function todayISO(): string {
     .slice(0, 10);
 }
 
+// Thêm phần giờ vào cho đúng dạng API yêu cầu.
 function toApiDate(date: string): string {
   return `${date}T00:00:00.000Z`;
 }
@@ -66,8 +74,16 @@ export default function BookingCard({
   const [checkOut, setCheckOut] =
     useState(initialCheckOut);
 
+  // Số khách lấy từ địa chỉ trang nên có thể lớn hơn sức chứa phòng,
+  // ví dụ /rooms/12?guests=99. Kẹp lại trong khoảng từ 1 tới sức chứa,
+  // để ô chọn luôn có sẵn giá trị đang chọn thay vì hiện trống.
   const [guests, setGuests] = useState(
-    String(initialGuests),
+    String(
+      Math.min(
+        Math.max(1, initialGuests),
+        room.khach,
+      ),
+    ),
   );
 
   const [submitting, setSubmitting] =
@@ -113,6 +129,8 @@ export default function BookingCard({
   const today = todayISO();
   const guestCount = Number(guests);
 
+  // Số đêm tính từ khoảng cách hai ngày, dùng để nhân ra tổng tiền.
+  // Chưa chọn đủ ngày hoặc ngày sai thứ tự thì coi như 0 đêm.
   const nights =
     checkIn &&
     checkOut &&
@@ -129,6 +147,7 @@ export default function BookingCard({
       ? nights * room.giaTien
       : 0;
 
+  // Danh sách số khách cho ô chọn, chạy từ 1 tới sức chứa tối đa của phòng.
   const guestOptions = useMemo(
     () =>
       Array.from(
@@ -138,6 +157,8 @@ export default function BookingCard({
     [room.khach],
   );
 
+  // Kiểm tra trước khi gửi. Trả về câu báo lỗi đầu tiên gặp phải, hợp lệ thì trả về rỗng.
+  // Đây là kiểm tra phía giao diện cho người dùng biết sớm, server vẫn kiểm tra lại.
   const validate = (): string | null => {
     if (!checkIn) {
       return "Vui lòng chọn ngày nhận phòng.";
@@ -169,6 +190,8 @@ export default function BookingCard({
     return null;
   };
 
+  // Đổi ngày nhận phòng mà ngày trả đang sớm hơn hoặc bằng thì xóa ngày trả đi,
+  // buộc người dùng chọn lại, thay vì giữ một cặp ngày vô lý.
   const handleCheckInChange = (
     value: string,
   ) => {
@@ -184,7 +207,9 @@ export default function BookingCard({
     }
   };
 
+  // Bấm nút Đặt phòng.
   const handleSubmit = async () => {
+    // Đang gửi rồi thì bỏ qua, tránh bấm hai lần tạo hai lượt đặt.
     if (submitting) {
       return;
     }
@@ -198,6 +223,9 @@ export default function BookingCard({
 
     setValidationMsg("");
 
+    // Chưa đăng nhập thì không đặt được: báo một câu rồi mở luôn cửa sổ đăng nhập.
+    // requestAuthModal phát tín hiệu cho Header mở cửa sổ đó, vì cửa sổ nằm ở Header
+    // chứ không nằm trong khung đặt phòng này.
     if (
       !hasHydrated ||
       !isAuthenticated ||
@@ -234,6 +262,7 @@ export default function BookingCard({
         return;
       }
 
+      // Gửi lên API: mã phòng, hai mốc ngày, số khách, và mã người đang đăng nhập.
       const payload: CreateBookingPayload = {
         id: 0,
         maPhong: room.id,

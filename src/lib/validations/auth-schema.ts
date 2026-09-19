@@ -2,6 +2,7 @@
 // Form dựa vào đây để báo lỗi ngay tại chỗ, trước khi gửi lên server.
 
 import { z } from 'zod';
+import { isNotInFuture, parseCalendarDate } from './date-rules';
 
 // Đăng nhập: email phải đúng dạng, mật khẩu từ 6 ký tự trở lên.
 export const signInSchema = z.object({
@@ -19,7 +20,13 @@ export const signUpSchema = z.object({
     .string()
     .min(1, 'Vui lòng nhập số điện thoại.')
     .regex(/^[0-9+\-\s()]{10,15}$/, 'Số điện thoại không hợp lệ.'),
-  birthday: z.string().min(1, 'Vui lòng chọn ngày sinh.'),
+  // Ngày sinh phải là ngày có thật và không ở tương lai. Hai quy tắc này
+  // dùng chung với form sửa hồ sơ, viết một lần trong date-rules.ts.
+  birthday: z
+    .string()
+    .min(1, 'Vui lòng chọn ngày sinh.')
+    .refine((value) => parseCalendarDate(value) !== null, 'Ngày sinh không hợp lệ.')
+    .refine(isNotInFuture, 'Ngày sinh không được ở tương lai.'),
   gender: z.boolean({ message: 'Vui lòng chọn giới tính.' }),
 });
 

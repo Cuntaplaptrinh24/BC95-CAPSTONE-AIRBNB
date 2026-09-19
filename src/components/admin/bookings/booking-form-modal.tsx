@@ -6,7 +6,7 @@ import {
   adminBookingSchema,
   type AdminBookingFormValues,
 } from '@/lib/validations/admin-schema';
-import { updateBooking } from '@/services/booking-service';
+import { hasRoomBookingConflict, updateBooking } from '@/services/booking-service';
 import { buildAuthHeaders } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { showToast } from '@/components/common/toast';
@@ -16,6 +16,7 @@ import type { Booking } from '@/types';
 interface BookingFormModalProps {
   booking: Booking;
   roomName: string;
+  roomCapacity?: number;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -26,6 +27,7 @@ interface BookingFormModalProps {
 export default function BookingFormModal({
   booking,
   roomName,
+  roomCapacity,
   onClose,
   onSaved,
 }: BookingFormModalProps) {
@@ -52,7 +54,31 @@ export default function BookingFormModal({
       return;
     }
 
+    // Số khách không được vượt sức chứa của phòng. Kiểm tra ở đây chứ không đặt
+    // trong bộ quy tắc zod, vì sức chứa thay đổi theo từng phòng.
+    if (
+      roomCapacity !== undefined &&
+      values.soLuongKhach > roomCapacity
+    ) {
+      showToast('error', `Phòng này tối đa ${roomCapacity} khách.`);
+      return;
+    }
+
     try {
+      // Ngày mới không được trùng với lượt đặt khác của cùng phòng.
+      // Tham số cuối là mã lượt đặt đang sửa, để nó không tự báo trùng với chính mình.
+      const conflicted = await hasRoomBookingConflict(
+        booking.maPhong,
+        values.ngayDen,
+        values.ngayDi,
+        booking.id,
+      );
+
+      if (conflicted) {
+        showToast('error', 'Phòng đã có người đặt trong khoảng thời gian này.');
+        return;
+      }
+
       // API cập nhật đòi cả object, nên phải gửi kèm mã phòng và mã người đặt cũ,
       // dù hai thứ đó không đổi. Thiếu là server hiểu thành xóa mất.
       await updateBooking(
@@ -140,6 +166,7 @@ export default function BookingFormModal({
             <input
               id="booking-khach"
               type="number"
+              max={roomCapacity}
               {...register('soLuongKhach', { valueAsNumber: true })}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
             />

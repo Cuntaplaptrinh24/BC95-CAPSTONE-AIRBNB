@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import { USER_ROLES } from '@/types/user';
+import { isNotInFuture, parseCalendarDate } from './date-rules';
 
 // Những ô nhập giống nhau giữa form thêm mới và form sửa người dùng.
 // Tách riêng ra đây để khỏi viết lại hai lần.
@@ -14,7 +15,13 @@ const adminUserBaseFields = {
     .string()
     .min(1, 'Vui lòng nhập số điện thoại.')
     .regex(/^[0-9+\-\s()]{10,15}$/, 'Số điện thoại không hợp lệ.'),
-  birthday: z.string().min(1, 'Vui lòng chọn ngày sinh.'),
+  // Ngày sinh phải là ngày có thật và không ở tương lai, dùng chung quy tắc
+  // với form đăng ký và form sửa hồ sơ.
+  birthday: z
+    .string()
+    .min(1, 'Vui lòng chọn ngày sinh.')
+    .refine((value) => parseCalendarDate(value) !== null, 'Ngày sinh không hợp lệ.')
+    .refine(isNotInFuture, 'Ngày sinh không được ở tương lai.'),
   gender: z.boolean({ message: 'Vui lòng chọn giới tính.' }),
   role: z.enum(USER_ROLES, { message: 'Vui lòng chọn vai trò.' }),
 };
